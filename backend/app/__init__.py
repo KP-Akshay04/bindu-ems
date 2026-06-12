@@ -22,9 +22,16 @@ def create_app():
     from app.routes.branch_routes import branch_bp
     from app.routes.department_routes import department_bp
     from app.routes.employee_routes import employee_bp
+    from app.routes.leave_routes import leave_bp
+    from app.routes.payroll_routes import payroll_bp
+    from app.models.attendance import Attendance
+    from app.routes.attendance_routes import attendance_bp
 
     app.register_blueprint(department_bp)
     app.register_blueprint(branch_bp)
     app.register_blueprint(employee_bp)
-    
+    app.register_blueprint(leave_bp)
+    app.register_blueprint(payroll_bp)
+    app.register_blueprint(attendance_bp)
+
     return app
