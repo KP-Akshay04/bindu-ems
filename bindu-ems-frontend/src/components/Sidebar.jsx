@@ -1,0 +1,111 @@
+import { NavLink } from "react-router-dom";
+import {
+  LayoutDashboard,
+  Users,
+  ClipboardCheck,
+  CalendarRange,
+  Wallet,
+  LogOut,
+  Waves,
+  ChevronLeft,
+} from "lucide-react";
+import { useAuth } from "../context/AuthContext";
+
+const NAV = [
+  { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { to: "/employees", label: "Employees", icon: Users },
+  { to: "/attendance", label: "Attendance", icon: ClipboardCheck },
+  { to: "/leaves", label: "Leave Management", icon: CalendarRange },
+  { to: "/payroll", label: "Payroll", icon: Wallet },
+];
+
+function DropLogo({ size = 36 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 64 64" fill="none" aria-hidden>
+      <defs>
+        <linearGradient id="sbDrop" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#38BDF8" />
+          <stop offset="100%" stopColor="#0369A1" />
+        </linearGradient>
+      </defs>
+      <path d="M32 4C32 4 10 28 10 42a22 22 0 1 0 44 0C54 28 32 4 32 4Z" fill="url(#sbDrop)" />
+    </svg>
+  );
+}
+
+export default function Sidebar({ collapsed = false, onToggle, onNavigate }) {
+  const { logout } = useAuth();
+  const width = collapsed ? "w-[78px]" : "w-[260px]";
+
+  return (
+    <aside className={`${width} h-full flex flex-col bg-white/85 backdrop-blur-xl border-r border-brand-100 shadow-[0_0_40px_-20px_rgba(2,132,199,0.25)] transition-[width] duration-200`}>
+      {/* Brand */}
+      <div className="px-4 pt-6 pb-5 border-b border-brand-50 flex items-center gap-2.5">
+        <DropLogo size={36} />
+        {!collapsed && (
+          <div className="leading-none flex-1">
+            <div className="flex items-baseline gap-1.5">
+              <span className="text-lg font-extrabold tracking-tight text-slate-900">BINDU</span>
+              <span className="text-lg font-extrabold tracking-tight text-brand-500">EMS</span>
+            </div>
+            <p className="text-[9px] tracking-[0.28em] font-semibold text-slate-400 mt-1">WATER COMPANY</p>
+          </div>
+        )}
+        {onToggle && (
+          <button onClick={onToggle} className="btn-ghost text-slate-500 hidden lg:inline-flex" aria-label="Toggle sidebar">
+            <ChevronLeft className={`w-4 h-4 transition-transform ${collapsed ? "rotate-180" : ""}`} />
+          </button>
+        )}
+      </div>
+
+      {/* Nav */}
+      <nav className="flex-1 px-3 py-5 space-y-1">
+        {NAV.map(({ to, label, icon: Icon }) => (
+          <NavLink
+            key={to}
+            to={to}
+            onClick={onNavigate}
+            title={collapsed ? label : undefined}
+            className={({ isActive }) =>
+              `group flex items-center gap-3 ${collapsed ? "justify-center px-2" : "px-3.5"} py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 ${
+                isActive
+                  ? "bg-gradient-to-r from-brand-400 to-brand-600 text-white shadow-[0_8px_20px_-8px_rgba(2,132,199,0.6)]"
+                  : "text-slate-600 hover:bg-brand-50 hover:text-brand-600"
+              }`
+            }
+          >
+            {({ isActive }) => (
+              <>
+                <Icon className={`w-5 h-5 ${isActive ? "text-white" : "text-slate-400 group-hover:text-brand-500"}`} strokeWidth={2.2} />
+                {!collapsed && <span>{label}</span>}
+              </>
+            )}
+          </NavLink>
+        ))}
+      </nav>
+
+      {/* Footer */}
+      <div className="px-4 pb-5">
+        {!collapsed && (
+          <div className="rounded-2xl bg-gradient-to-br from-brand-50 to-brand-100/70 border border-brand-100 p-4 mb-3">
+            <div className="flex items-center gap-2 text-brand-600 mb-2">
+              <Waves className="w-4 h-4" />
+              <p className="text-[11px] tracking-[0.22em] font-semibold">PURE · TRUSTED</p>
+            </div>
+            <p className="text-xs text-slate-600 leading-snug">
+              Workforce precisely managed across every drop.
+            </p>
+          </div>
+        )}
+        <button
+          onClick={logout}
+          className={`w-full flex items-center gap-3 ${collapsed ? "justify-center px-2" : "px-3.5"} py-2.5 rounded-xl text-sm font-semibold text-slate-500 hover:bg-rose-50 hover:text-rose-600 transition-colors`}
+          title="Sign Out"
+        >
+          <LogOut className="w-5 h-5" strokeWidth={2.2} />
+          {!collapsed && "Sign Out"}
+        </button>
+      </div>
+    </aside>
+  );
+}
