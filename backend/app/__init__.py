@@ -29,6 +29,7 @@ def create_app():
     from app.models.attendance import Attendance
     from app.routes.attendance_routes import attendance_bp
     from app.routes.dashboard_routes import dashboard_bp
+    from app.routes.auth_routes import auth_bp
 
     app.register_blueprint(department_bp)
     app.register_blueprint(branch_bp)
@@ -37,5 +38,6 @@ def create_app():
     app.register_blueprint(payroll_bp)
     app.register_blueprint(attendance_bp)
     app.register_blueprint(dashboard_bp)
+    app.register_blueprint(auth_bp)
 
     return app
