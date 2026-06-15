@@ -24,13 +24,13 @@ export function AuthProvider({ children }) {
     // accept common Flask response shapes
     const token = data.token || data.access_token || data.jwt || null;
     const u =
-      data.user ||
-      data.employee ||
-      (data.id ? data : null) || {
-        employee_id,
-        role: data.role || role,
-        name: data.name || employee_id,
-      };
+  data.user ||
+  data.employee ||
+  (data.employee_id ? data : null) || {
+    employee_id,
+    role: data.role || role,
+    name: data.name || employee_id,
+  };
     if (token) localStorage.setItem("bindu_token", token);
     localStorage.setItem("bindu_user", JSON.stringify(u));
     setUser(u);

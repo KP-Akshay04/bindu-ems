@@ -17,8 +17,7 @@ export default function Leaves() {
 
   const [open, setOpen] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [form, setForm] = useState({ employee_id: "", leave_type: "Casual Leave", from_date: "", to_date: "", reason: "" });
-
+  const [form, setForm] = useState({employee_id: "", leave_type: "Casual Leave", start_date: "", end_date: "", reason: ""});
   const load = async () => {
     setLoading(true);
     setError(null);
@@ -60,7 +59,7 @@ export default function Leaves() {
     try {
       await createLeave(form);
       setOpen(false);
-      setForm({ employee_id: "", leave_type: "Casual Leave", from_date: "", to_date: "", reason: "" });
+      setForm({employee_id: "", leave_type: "Casual Leave", start_date: "", end_date: "", reason: ""});
       await load();
     } catch (err) {
       alert(err?.response?.data?.message || err.message || "Submit failed.");
@@ -208,11 +207,11 @@ export default function Leaves() {
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="label">From</label>
-              <input type="date" className="input" required value={form.from_date} onChange={(e) => setForm({ ...form, from_date: e.target.value })} />
+              <input type="date" className="input" required value={form.start_date} onChange={(e) => setForm({ ...form, start_date: e.target.value })} />
             </div>
             <div>
               <label className="label">To</label>
-              <input type="date" className="input" required value={form.to_date} onChange={(e) => setForm({ ...form, to_date: e.target.value })} />
+              <input type="date" className="input" required value={form.end_date} onChange={(e) => setForm({ ...form, end_date: e.target.value })} />
             </div>
           </div>
           <div>

@@ -39,17 +39,43 @@ export default function Payroll() {
   useEffect(() => { load(); }, []);
 
   const enriched = useMemo(
-    () =>
-      items.map((p) => ({
-        ...p,
-        _net: Number(p.net ?? p.net_pay ?? p.amount ?? 0),
-        _basic: Number(p.basic ?? 0),
-        _hra: Number(p.hra ?? 0),
-        _allowances: Number(p.allowances ?? p.allowance ?? 0),
-        _deductions: Number(p.deductions ?? p.deduction ?? 0),
-      })),
-    [items]
-  );
+  () =>
+    items.map((p) => ({
+      ...p,
+
+      _net: Number(
+        p.net_salary ??
+        p.net ??
+        p.net_pay ??
+        p.amount ??
+        0
+      ),
+
+      _basic: Number(
+        p.basic_salary ??
+        p.basic ??
+        0
+      ),
+
+      _hra: Number(
+        p.hra ??
+        0
+      ),
+
+      _allowances: Number(
+        p.allowances ??
+        p.allowance ??
+        0
+      ),
+
+      _deductions: Number(
+        p.deductions ??
+        p.deduction ??
+        0
+      ),
+    })),
+  [items]
+);
 
   const totals = useMemo(() => {
     return enriched.reduce(

@@ -50,6 +50,12 @@ class Employee(db.Model):
         db.String(100)
     )
 
+    role = db.Column(
+    db.String(50),
+    nullable=False,
+    default="Employee"
+    )
+    
     joining_date = db.Column(
         db.Date
     )

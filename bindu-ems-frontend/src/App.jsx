@@ -8,6 +8,9 @@ import Employees from "./pages/Employees";
 import Attendance from "./pages/Attendance";
 import Leaves from "./pages/Leaves";
 import Payroll from "./pages/Payroll";
+import RoleProtectedRoute from "./components/RoleProtectedRoute";
+import Profile from "./pages/Profile";
+import Settings from "./pages/Settings";
 
 export default function App() {
   return (
@@ -24,10 +27,30 @@ export default function App() {
             }
           >
             <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/employees" element={<Employees />} />
-            <Route path="/attendance" element={<Attendance />} />
-            <Route path="/leaves" element={<Leaves />} />
-            <Route path="/payroll" element={<Payroll />} />
+            <Route path="/employees"element={<RoleProtectedRoute allowedRoles={["Super Admin", "HR Admin"]}>
+      <Employees />
+    </RoleProtectedRoute>
+  }
+/>
+            <Route path="/attendance"element={<RoleProtectedRoute allowedRoles={["Super Admin","HR Admin","Manager","Employee",]}>
+      <Attendance />
+    </RoleProtectedRoute>
+  }
+/>
+            <Route path="/leaves"element={<RoleProtectedRoute allowedRoles={["Super Admin","HR Admin","Manager","Employee",]}>
+      <Leaves />
+    </RoleProtectedRoute>
+  }
+/>
+            <Route path="/payroll"element={<RoleProtectedRoute allowedRoles={["Super Admin","HR Admin","Employee",]}>
+      <Payroll />
+    </RoleProtectedRoute>
+  }
+/>
+
+            <Route path="/profile" element={<Profile />} />
+            <Route path="/settings" element={<Settings />} />
+
           </Route>
           <Route path="*" element={<Navigate to="/login" replace />} />
         </Routes>

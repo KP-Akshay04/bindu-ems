@@ -59,7 +59,7 @@ export const fetchLeaves = (params = {}) =>
   api.get("/api/leaves", { params }).then((r) => r.data);
 
 export const createLeave = (payload) =>
-  api.post("/api/leaves", payload).then((r) => r.data);
+  api.post("/api/leaves/apply", payload).then((r) => r.data);
 
 // ---- PAYROLL ----
 export const fetchPayroll = (params = {}) =>

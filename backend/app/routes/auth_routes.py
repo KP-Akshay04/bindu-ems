@@ -36,10 +36,11 @@ def login():
         }), 401
 
     return jsonify({
-        "success": True,
-        "employee_id": employee.employee_id,
-        "employee_code": employee.employee_code,
-        "full_name": employee.full_name,
-        "email": employee.email,
-        "designation": employee.designation
-    }), 200
+    "success": True,
+    "employee_id": employee.employee_id,
+    "employee_code": employee.employee_code,
+    "full_name": employee.full_name,
+    "email": employee.email,
+    "designation": employee.designation,
+    "role": employee.role
+}), 200

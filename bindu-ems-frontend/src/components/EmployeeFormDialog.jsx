@@ -2,12 +2,13 @@ import { useEffect, useState } from "react";
 import Modal from "./Modal";
 
 const EMPTY = {
-  name: "",
+  employee_code: "",
+  full_name: "",
   email: "",
+  password: "",
   phone: "",
-  department: "",
   designation: "",
-  status: "Active",
+  role: "Employee",
 };
 
 export default function EmployeeFormDialog({ open, onClose, onSubmit, initial, loading }) {
@@ -17,12 +18,13 @@ export default function EmployeeFormDialog({ open, onClose, onSubmit, initial, l
   useEffect(() => {
     if (open) {
       setForm({
-        name: initial?.name ?? "",
+        employee_code: initial?.employee_code ?? "",
+        full_name: initial?.full_name ?? "",
         email: initial?.email ?? "",
+        password: "",
         phone: initial?.phone ?? "",
-        department: initial?.department ?? "",
         designation: initial?.designation ?? "",
-        status: initial?.status ?? "Active",
+        role: initial?.role ?? "Employee",
       });
     }
   }, [open, initial]);
@@ -46,7 +48,7 @@ export default function EmployeeFormDialog({ open, onClose, onSubmit, initial, l
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label className="label">Full Name</label>
-            <input className="input" required value={form.name} onChange={update("name")} placeholder="Aarav Sharma" />
+            <input className="input" required value={form.full_name} onChange={update("full_name")} placeholder="Aarav Sharma" />
           </div>
           <div>
             <label className="label">Email</label>
@@ -81,6 +83,44 @@ export default function EmployeeFormDialog({ open, onClose, onSubmit, initial, l
             {loading ? "Saving..." : isEdit ? "Save Changes" : "Create Employee"}
           </button>
         </div>
+
+        <div>
+  <label className="label">Employee Code</label>
+  <input
+    className="input"
+    required
+    value={form.employee_code}
+    onChange={update("employee_code")}
+    placeholder="EMP002"
+  />
+</div>
+
+<div>
+  <label className="label">Password</label>
+  <input
+    className="input"
+    type="password"
+    required={!isEdit}
+    value={form.password}
+    onChange={update("password")}
+    placeholder="password123"
+  />
+</div>
+
+<div>
+  <label className="label">Role</label>
+  <select
+    className="input"
+    value={form.role}
+    onChange={update("role")}
+  >
+    <option>Employee</option>
+    <option>Manager</option>
+    <option>HR Admin</option>
+    <option>Super Admin</option>
+  </select>
+</div>
+
       </form>
     </Modal>
   );

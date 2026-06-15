@@ -23,7 +23,11 @@ export default function Topbar({ title, subtitle, onOpenSidebar }) {
     navigate("/login");
   };
 
-  const name = user?.name || user?.employee_id || "User";
+  const name =
+  user?.full_name ||
+  user?.name ||
+  user?.employee_code ||
+  "User";
   const role = user?.role || "Member";
 
   return (
@@ -79,12 +83,14 @@ export default function Topbar({ title, subtitle, onOpenSidebar }) {
               <p className="text-sm font-semibold text-slate-800 truncate">{name}</p>
               <p className="text-xs text-slate-500 truncate">{user?.email || user?.employee_id}</p>
             </div>
-            <button className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-slate-700 hover:bg-brand-50">
-              <UserCircle2 className="w-4 h-4" /> My Profile
+            <button onClick={() => {setMenuOpen(false); navigate("/profile");}} className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-slate-700 hover:bg-brand-50">
+            <UserCircle2 className="w-4 h-4" /> My Profile
             </button>
-            <button className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-slate-700 hover:bg-brand-50">
-              <Settings className="w-4 h-4" /> Settings
+
+            <button onClick={() => {setMenuOpen(false); navigate("/settings");}} className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-slate-700 hover:bg-brand-50">
+            <Settings className="w-4 h-4" /> Settings
             </button>
+
             <button
               onClick={handleLogout}
               className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-rose-600 hover:bg-rose-50"

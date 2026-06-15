@@ -29,6 +29,7 @@ def create_employee():
         department_id=data.get("department_id"),
 
         designation=data.get("designation"),
+        role=data.get("role", "Employee"),
         basic_salary=data.get("basic_salary", 0)
     )
 
@@ -57,6 +58,7 @@ def get_employees():
             "branch_id": emp.branch_id,
             "department_id": emp.department_id,
             "designation": emp.designation,
+            "role": emp.role,
             "basic_salary": emp.basic_salary,
             "leave_balance": emp.leave_balance,
             "status": emp.status
@@ -89,6 +91,11 @@ def update_employee(id):
     employee.designation = data.get(
         "designation",
         employee.designation
+    )
+
+    employee.role = data.get(
+    "role",
+    employee.role
     )
 
     employee.basic_salary = data.get(

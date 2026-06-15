@@ -58,7 +58,7 @@ export default function Attendance() {
   const trend = useMemo(() => {
     const buckets = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((d) => ({ day: d, present: 0 }));
     items.forEach((a) => {
-      const dt = new Date(a.date ?? a.created_at ?? 0);
+      const dt = new Date(a.attendance_date ?? a.date ?? a.created_at ?? 0);
       if (isNaN(dt.getTime())) return;
       const idx = (dt.getDay() + 6) % 7;
       const s = String(a.status ?? "").toLowerCase();
@@ -171,10 +171,10 @@ export default function Attendance() {
                           </div>
                         </div>
                       </td>
-                      <td className="px-5 py-3 text-slate-700">{formatDate(a.date ?? a.created_at)}</td>
+                      <td className="px-5 py-3 text-slate-700">{formatDate(a.attendance_date ?? a.date ?? a.created_at)}</td>
                       <td className="px-5 py-3 font-mono text-slate-700">{formatTime(a.check_in ?? a.login_time)}</td>
                       <td className="px-5 py-3 font-mono text-slate-700">{formatTime(a.check_out ?? a.logout_time)}</td>
-                      <td className="px-5 py-3 font-mono text-slate-700">{a.hours ?? a.total_hours ?? "—"}</td>
+                      <td className="px-5 py-3 font-mono text-slate-700">{a.working_hours ?? a.hours ?? a.total_hours ?? "—"}</td>
                       <td className="px-5 py-3"><StatusBadge status={a.status ?? "—"} /></td>
                     </tr>
                   );

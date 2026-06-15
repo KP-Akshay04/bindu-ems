@@ -33,9 +33,42 @@ function DropLogo({ size = 36 }) {
   );
 }
 
+const NAV_ITEMS = {
+  "Super Admin": [
+    { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+    { to: "/employees", label: "Employees", icon: Users },
+    { to: "/attendance", label: "Attendance", icon: ClipboardCheck },
+    { to: "/leaves", label: "Leave Management", icon: CalendarRange },
+    { to: "/payroll", label: "Payroll", icon: Wallet },
+  ],
+
+  "HR Admin": [
+    { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+    { to: "/employees", label: "Employees", icon: Users },
+    { to: "/attendance", label: "Attendance", icon: ClipboardCheck },
+    { to: "/leaves", label: "Leave Management", icon: CalendarRange },
+    { to: "/payroll", label: "Payroll", icon: Wallet },
+  ],
+
+  "Manager": [
+    { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+    { to: "/attendance", label: "Attendance", icon: ClipboardCheck },
+    { to: "/leaves", label: "Leave Approvals", icon: CalendarRange },
+  ],
+
+  "Employee": [
+    { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+    { to: "/attendance", label: "My Attendance", icon: ClipboardCheck },
+    { to: "/leaves", label: "My Leaves", icon: CalendarRange },
+    { to: "/payroll", label: "My Payslips", icon: Wallet },
+  ],
+};
+
 export default function Sidebar({ collapsed = false, onToggle, onNavigate }) {
-  const { logout } = useAuth();
+  const { logout, user } = useAuth();
   const width = collapsed ? "w-[78px]" : "w-[260px]";
+  const role = user?.role || "Employee";
+  const NAV = NAV_ITEMS[role] || NAV_ITEMS["Employee"];
 
   return (
     <aside className={`${width} h-full flex flex-col bg-white/85 backdrop-blur-xl border-r border-brand-100 shadow-[0_0_40px_-20px_rgba(2,132,199,0.25)] transition-[width] duration-200`}>
