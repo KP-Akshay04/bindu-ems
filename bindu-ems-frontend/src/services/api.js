@@ -65,4 +65,8 @@ export const createLeave = (payload) =>
 export const fetchPayroll = (params = {}) =>
   api.get("/api/payroll", { params }).then((r) => r.data);
 
+// ---- PASSWORD CHANGE ----
+export const changePassword = (id,payload) =>
+  api.put(`/api/employees/${id}/password`,payload).then((r) => r.data);
+
 export default api;

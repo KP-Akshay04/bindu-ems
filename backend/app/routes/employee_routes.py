@@ -3,6 +3,7 @@ from flask import Blueprint, request, jsonify
 from app import db
 from app.models.employee import Employee
 from app.utils.security import hash_password
+from app.utils.security import (hash_password,verify_password)
 
 employee_bp = Blueprint(
     "employee_bp",
@@ -120,4 +121,41 @@ def deactivate_employee(id):
 
     return jsonify({
         "message": "Employee deactivated successfully"
+    })
+
+@employee_bp.route(
+    "/api/employees/<int:id>/password",
+    methods=["PUT"]
+)
+
+def change_password(id):
+
+    employee = Employee.query.get_or_404(id)
+
+    data = request.get_json()
+
+    current_password = data.get(
+        "current_password"
+    )
+
+    new_password = data.get(
+        "new_password"
+    )
+
+    if not verify_password(
+        current_password,
+        employee.password_hash
+    ):
+        return jsonify({
+            "message": "Current password is incorrect"
+        }), 400
+
+    employee.password_hash = hash_password(
+        new_password
+    )
+
+    db.session.commit()
+
+    return jsonify({
+        "message": "Password updated successfully"
     })

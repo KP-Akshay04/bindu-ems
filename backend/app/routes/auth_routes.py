@@ -42,5 +42,10 @@ def login():
     "full_name": employee.full_name,
     "email": employee.email,
     "designation": employee.designation,
-    "role": employee.role
+    "role": employee.role,
+    "phone": employee.phone,
+    "status": employee.status,
+    "joining_date": str(employee.joining_date)
+        if employee.joining_date
+        else None,
 }), 200
