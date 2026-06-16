@@ -69,4 +69,10 @@ export const fetchPayroll = (params = {}) =>
 export const changePassword = (id,payload) =>
   api.put(`/api/employees/${id}/password`,payload).then((r) => r.data);
 
+export const fetchAnnouncements = () =>
+  api.get("/api/announcements").then((r) => r.data);
+
+export const createAnnouncement = (payload) =>
+  api.post("/api/announcements", payload).then((r) => r.data);
+
 export default api;

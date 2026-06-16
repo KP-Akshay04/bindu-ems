@@ -8,6 +8,7 @@ import {
   LogOut,
   Waves,
   ChevronLeft,
+  Bell,
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 
@@ -16,7 +17,7 @@ const NAV = [
   { to: "/employees", label: "Employees", icon: Users },
   { to: "/attendance", label: "Attendance", icon: ClipboardCheck },
   { to: "/leaves", label: "Leave Management", icon: CalendarRange },
-  { to: "/payroll", label: "Payroll", icon: Wallet },
+  { to: "/payroll", label: "Payroll", icon: Wallet }, 
 ];
 
 function DropLogo({ size = 36 }) {
@@ -40,6 +41,7 @@ const NAV_ITEMS = {
     { to: "/attendance", label: "Attendance", icon: ClipboardCheck },
     { to: "/leaves", label: "Leave Management", icon: CalendarRange },
     { to: "/payroll", label: "Payroll", icon: Wallet },
+    { to: "/announcements", label: "Announcements", icon: Bell },
   ],
 
   "HR Admin": [
@@ -48,12 +50,14 @@ const NAV_ITEMS = {
     { to: "/attendance", label: "Attendance", icon: ClipboardCheck },
     { to: "/leaves", label: "Leave Management", icon: CalendarRange },
     { to: "/payroll", label: "Payroll", icon: Wallet },
+    { to: "/announcements", label: "Announcements", icon: Bell },
   ],
 
   "Manager": [
     { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
     { to: "/attendance", label: "Attendance", icon: ClipboardCheck },
     { to: "/leaves", label: "Leave Approvals", icon: CalendarRange },
+    { to: "/announcements", label: "Announcements", icon: Bell },
   ],
 
   "Employee": [
@@ -61,6 +65,7 @@ const NAV_ITEMS = {
     { to: "/attendance", label: "My Attendance", icon: ClipboardCheck },
     { to: "/leaves", label: "My Leaves", icon: CalendarRange },
     { to: "/payroll", label: "My Payslips", icon: Wallet },
+    { to: "/announcements", label: "Announcements", icon: Bell },
   ],
 };
 

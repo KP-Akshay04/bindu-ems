@@ -11,6 +11,7 @@ import Payroll from "./pages/Payroll";
 import RoleProtectedRoute from "./components/RoleProtectedRoute";
 import Profile from "./pages/Profile";
 import Settings from "./pages/Settings";
+import Announcements from "./pages/Announcements";
 
 export default function App() {
   return (
@@ -50,6 +51,7 @@ export default function App() {
 
             <Route path="/profile" element={<Profile />} />
             <Route path="/settings" element={<Settings />} />
+            <Route path="/announcements" element={<Announcements />} />
 
           </Route>
           <Route path="*" element={<Navigate to="/login" replace />} />
