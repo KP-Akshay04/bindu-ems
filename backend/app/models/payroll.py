@@ -43,3 +43,13 @@ class Payroll(db.Model):
         db.Integer,
         nullable=False
     )
+
+    status = db.Column(
+    db.String(20),
+    default="Processing"
+    )
+
+    paid_date = db.Column(
+        db.Date
+    )
+    

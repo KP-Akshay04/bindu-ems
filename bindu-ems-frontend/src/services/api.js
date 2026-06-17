@@ -75,4 +75,7 @@ export const fetchAnnouncements = () =>
 export const createAnnouncement = (payload) =>
   api.post("/api/announcements", payload).then((r) => r.data);
 
+export const markPayrollPaid = (id) =>
+  api.put(`/api/payroll/${id}/pay`).then((r) => r.data);
+
 export default api;

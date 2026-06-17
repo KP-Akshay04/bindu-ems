@@ -45,7 +45,5 @@ def login():
     "role": employee.role,
     "phone": employee.phone,
     "status": employee.status,
-    "joining_date": str(employee.joining_date)
-        if employee.joining_date
-        else None,
-}), 200
+    "employee_photo": employee.employee_photo,   # MUST EXIST
+})

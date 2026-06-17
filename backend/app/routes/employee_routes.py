@@ -1,9 +1,11 @@
 from flask import Blueprint, request, jsonify
-
+from werkzeug.utils import secure_filename
+import os
 from app import db
 from app.models.employee import Employee
 from app.utils.security import hash_password
 from app.utils.security import (hash_password,verify_password)
+from flask import send_from_directory
 
 employee_bp = Blueprint(
     "employee_bp",
@@ -159,3 +161,69 @@ def change_password(id):
     return jsonify({
         "message": "Password updated successfully"
     })
+
+@employee_bp.route(
+    "/api/employees/<int:id>/photo",
+    methods=["POST"]
+)
+def upload_photo(id):
+
+    employee = Employee.query.get_or_404(id)
+
+    if "photo" not in request.files:
+        return jsonify({
+            "message": "No file uploaded"
+        }), 400
+
+    file = request.files["photo"]
+
+    if file.filename == "":
+        return jsonify({
+            "message": "No file selected"
+        }), 400
+
+    filename = secure_filename(
+        f"{employee.employee_id}_{file.filename}"
+    )
+
+    upload_folder = os.path.join(
+        "uploads",
+        "profile_photos"
+    )
+
+    os.makedirs(
+        upload_folder,
+        exist_ok=True
+    )
+
+    filepath = os.path.join(
+        upload_folder,
+        filename
+    )
+
+    file.save(filepath)
+
+    employee.employee_photo = filepath
+
+    db.session.commit()
+
+    return jsonify({
+        "message": "Photo uploaded successfully",
+        "photo": filepath
+    })
+
+@employee_bp.route(
+    "/uploads/profile_photos/<filename>"
+)
+def serve_profile_photo(filename):
+
+    upload_folder = os.path.join(
+        os.getcwd(),
+        "uploads",
+        "profile_photos"
+    )
+
+    return send_from_directory(
+        upload_folder,
+        filename
+    )

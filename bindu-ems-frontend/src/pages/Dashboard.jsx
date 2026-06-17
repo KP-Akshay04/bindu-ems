@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useAuth } from "../context/AuthContext";
 import {
   Users,
   UserCheck,
@@ -25,18 +26,22 @@ import {
 } from "recharts";
 import LoadingSpinner from "../components/LoadingSpinner";
 import ErrorState from "../components/ErrorState";
-import { fetchEmployees, fetchAttendance, fetchLeaves, fetchPayroll } from "../services/api";
+import { fetchEmployees, fetchAttendance, fetchLeaves, fetchPayroll, fetchAnnouncements, } from "../services/api";
 import { formatINR, extractList, initials } from "../utils/format";
 
 const PIE_COLORS = ["#0EA5E9", "#0284C7", "#38BDF8", "#F43F5E"];
 
 export default function Dashboard() {
+  const { user } = useAuth();
+  const role = user?.role || "Employee";
+
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [employees, setEmployees] = useState([]);
   const [attendance, setAttendance] = useState([]);
   const [leaves, setLeaves] = useState([]);
   const [payroll, setPayroll] = useState([]);
+  const [announcements, setAnnouncements] = useState([]);
 
   const load = async () => {
     setLoading(true);
@@ -48,10 +53,25 @@ export default function Dashboard() {
         fetchLeaves(),
         fetchPayroll(),
       ]);
+
+      const [
+  employeesData,
+  attendanceData,
+  leavesData,
+  payrollData,
+  announcementsData,
+] = await Promise.all([
+  fetchEmployees(),
+  fetchAttendance(),
+  fetchLeaves(),
+  fetchPayroll(),
+  fetchAnnouncements(),
+]);
       setEmployees(extractList(e, "employees"));
       setAttendance(extractList(a, "attendance"));
       setLeaves(extractList(l, "leaves"));
       setPayroll(extractList(p, "payroll"));
+      setAnnouncements(announcementsData.slice(0, 5));
     } catch (err) {
       setError(err?.response?.data?.message || err.message || "Failed to load dashboard data.");
     } finally {
@@ -144,15 +164,103 @@ export default function Dashboard() {
   if (loading) return <LoadingSpinner label="Loading dashboard..." />;
   if (error) return <ErrorState message={error} onRetry={load} />;
 
-  const KPIS = [
-    { label: "Total Employees", value: stats.total, delta: "Workforce strength", icon: Users, accent: "from-brand-400 to-brand-600" },
-    { label: "Present Today", value: stats.present, delta: "Currently active", icon: UserCheck, accent: "from-emerald-400 to-teal-600" },
-    { label: "On Leave", value: stats.onLeave, delta: "Approved leaves", icon: CalendarDays, accent: "from-amber-400 to-orange-500" },
-    { label: "Monthly Payroll", value: formatINR(stats.monthlyPayroll), delta: "Latest cycle", icon: Wallet, accent: "from-violet-400 to-indigo-600" },
-  ];
+  const KPIS =
+  role === "Super Admin"
+    ? [
+        {
+          label: "Total Employees",
+          value: stats.total,
+          delta: "Workforce strength",
+          icon: Users,
+          accent: "from-brand-400 to-brand-600",
+        },
+        {
+          label: "Present Today",
+          value: stats.present,
+          delta: "Currently active",
+          icon: UserCheck,
+          accent: "from-emerald-400 to-teal-600",
+        },
+        {
+          label: "On Leave",
+          value: stats.onLeave,
+          delta: "Approved leaves",
+          icon: CalendarDays,
+          accent: "from-amber-400 to-orange-500",
+        },
+        {
+          label: "Monthly Payroll",
+          value: formatINR(stats.monthlyPayroll),
+          delta: "Latest cycle",
+          icon: Wallet,
+          accent: "from-violet-400 to-indigo-600",
+        },
+      ]
+    : role === "HR Admin"
+    ? [
+        {
+          label: "Employees",
+          value: stats.total,
+          delta: "Managed workforce",
+          icon: Users,
+          accent: "from-brand-400 to-brand-600",
+        },
+        {
+          label: "Present Today",
+          value: stats.present,
+          delta: "Attendance",
+          icon: UserCheck,
+          accent: "from-emerald-400 to-teal-600",
+        },
+        {
+          label: "Approved Leaves",
+          value: stats.onLeave,
+          delta: "Leave requests",
+          icon: CalendarDays,
+          accent: "from-amber-400 to-orange-500",
+        },
+      ]
+    : role === "Manager"
+    ? [
+        {
+          label: "Attendance",
+          value: stats.present,
+          delta: "Team activity",
+          icon: UserCheck,
+          accent: "from-emerald-400 to-teal-600",
+        },
+        {
+          label: "Leaves",
+          value: stats.onLeave,
+          delta: "Team requests",
+          icon: CalendarDays,
+          accent: "from-amber-400 to-orange-500",
+        },
+      ]
+    : [
+        {
+          label: "Attendance",
+          value: stats.present,
+          delta: "My attendance",
+          icon: UserCheck,
+          accent: "from-emerald-400 to-teal-600",
+        },
+        {
+          label: "Leave Status",
+          value: stats.onLeave,
+          delta: "My leaves",
+          icon: CalendarDays,
+          accent: "from-amber-400 to-orange-500",
+        },
+      ];
 
   return (
-    <div className="space-y-6">
+  <div className="space-y-6">
+
+    <h1 className="text-xl font-bold text-red-500">
+      {role}
+    </h1>
+
       {/* KPI cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
         {KPIS.map((s) => {
@@ -261,6 +369,42 @@ export default function Dashboard() {
                 </div>
               </div>
             ))}
+
+            <div className="glass-card p-5">
+  <h3 className="text-lg font-bold mb-4">
+    Recent Announcements
+  </h3>
+
+  <div className="space-y-3">
+    {announcements.length === 0 ? (
+      <p className="text-sm text-slate-500">
+        No announcements available.
+      </p>
+    ) : (
+      announcements.map((a) => (
+        <div
+          key={a.announcement_id}
+          className="border-b border-slate-100 pb-3"
+        >
+          <p className="font-semibold text-slate-800">
+            {a.title}
+          </p>
+
+          <p className="text-sm text-slate-500 line-clamp-2">
+            {a.message}
+          </p>
+
+          <p className="text-xs text-slate-400 mt-1">
+            {new Date(
+              a.created_at
+            ).toLocaleDateString()}
+          </p>
+        </div>
+      )) 
+    )}
+  </div>
+</div>
+
           </div>
         </div>
       </div>

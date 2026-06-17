@@ -1,5 +1,5 @@
 from flask import Blueprint, request, jsonify
-
+from datetime import date
 from app import db
 from app.models.payroll import Payroll
 
@@ -32,13 +32,14 @@ def create_payroll():
     )
 
     payroll = Payroll(
-        employee_id=data["employee_id"],
-        basic_salary=basic_salary,
-        allowances=allowances,
-        deductions=deductions,
-        net_salary=net_salary,
-        month=data["month"],
-        year=data["year"]
+    employee_id=data["employee_id"],
+    basic_salary=basic_salary,
+    allowances=allowances,
+    deductions=deductions,
+    net_salary=net_salary,
+    month=data["month"],
+    year=data["year"],
+    status="Processing"
     )
 
     db.session.add(payroll)
@@ -66,7 +67,24 @@ def get_payroll():
             "deductions": payroll.deductions,
             "net_salary": payroll.net_salary,
             "month": payroll.month,
-            "year": payroll.year
-        })
-
+            "year": payroll.year,
+            "status": payroll.status,
+            "paid_date": str(payroll.paid_date)
+                if payroll.paid_date
+                else None
+})
     return jsonify(result)
+
+@payroll_bp.route("/api/payroll/<int:id>/pay",methods=["PUT"])
+def mark_paid(id):
+
+    payroll = Payroll.query.get_or_404(id)
+
+    payroll.status = "Paid"
+    payroll.paid_date = date.today()
+
+    db.session.commit()
+
+    return jsonify({
+        "message": "Payroll marked as paid"
+    })

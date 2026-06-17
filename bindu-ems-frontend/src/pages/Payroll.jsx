@@ -13,7 +13,7 @@ import LoadingSpinner from "../components/LoadingSpinner";
 import ErrorState from "../components/ErrorState";
 import EmptyState from "../components/EmptyState";
 import StatusBadge from "../components/StatusBadge";
-import { fetchPayroll } from "../services/api";
+import { fetchPayroll, markPayrollPaid, } from "../services/api";
 import { extractList, formatINR, formatDate, initials } from "../utils/format";
 
 export default function Payroll() {
@@ -118,6 +118,21 @@ export default function Payroll() {
   if (loading) return <LoadingSpinner label="Loading payroll..." />;
   if (error) return <ErrorState message={error} onRetry={load} />;
 
+  const handleMarkPaid = async (id) => {
+  try {
+    await markPayrollPaid(id);
+    await load();
+
+    alert("Payroll marked as paid");
+  } catch (err) {
+    alert(
+      err?.response?.data?.message ||
+      err.message ||
+      "Failed to update payroll"
+    );
+  }
+};
+
   const STATS = [
     { label: "Total Disbursed", value: formatINR(totals.total), icon: Wallet, accent: "from-brand-400 to-brand-600" },
     { label: "Avg. Net Pay", value: formatINR(enriched.length ? totals.total / enriched.length : 0), icon: TrendingUp, accent: "from-violet-400 to-indigo-600" },
@@ -208,6 +223,7 @@ export default function Payroll() {
                   <th className="px-5 py-3 text-right">Net Pay</th>
                   <th className="px-5 py-3">Status</th>
                   <th className="px-5 py-3">Pay Date</th>
+                  <th className="px-5 py-3">Action</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -234,6 +250,25 @@ export default function Payroll() {
                       <td className="px-5 py-3 font-mono text-right font-bold text-brand-700">{formatINR(p._net)}</td>
                       <td className="px-5 py-3"><StatusBadge status={p.status ?? "—"} /></td>
                       <td className="px-5 py-3 text-slate-600">{formatDate(p.pay_date ?? p.created_at)}</td>
+                      <td className="px-5 py-3">
+  {String(p.status).toLowerCase() !==
+  "paid" ? (
+    <button
+      onClick={() =>
+        handleMarkPaid(
+          p.payroll_id
+        )
+      }
+      className="px-3 py-1 rounded-lg bg-emerald-600 text-white text-xs font-semibold hover:bg-emerald-700"
+    >
+      Mark Paid
+    </button>
+  ) : (
+    <span className="text-emerald-600 font-semibold">
+      Paid ✓
+    </span>
+  )}
+</td>
                     </tr>
                   );
                 })}
