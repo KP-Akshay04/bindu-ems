@@ -149,7 +149,7 @@ export default function Employees() {
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {filtered.map((e) => (
-                  <tr key={e.id} className="hover:bg-brand-50/40">
+                  <tr key={e.employee_id ?? e.id ?? e.employee_code} className="hover:bg-brand-50/40" >
                     <td className="px-5 py-3">
                       <div className="flex items-center gap-3">
                         <span className="inline-flex items-center justify-center w-9 h-9 rounded-full ring-2 ring-brand-100 bg-gradient-to-br from-brand-400 to-brand-600 text-white text-xs font-bold">

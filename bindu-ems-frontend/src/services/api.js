@@ -54,6 +54,9 @@ export const fetchAttendance = (params = {}) =>
 export const attendanceLogin = (payload) =>
   api.post("/api/attendance/login", payload).then((r) => r.data);
 
+export const attendanceLogout = (employee_id) =>
+  api.put(`/api/attendance/logout/${employee_id}`).then((r) => r.data);
+
 // ---- LEAVES ----
 export const fetchLeaves = (params = {}) =>
   api.get("/api/leaves", { params }).then((r) => r.data);
@@ -61,9 +64,21 @@ export const fetchLeaves = (params = {}) =>
 export const createLeave = (payload) =>
   api.post("/api/leaves/apply", payload).then((r) => r.data);
 
+export const approveLeave = (id) =>
+  api.put(`/api/leaves/${id}/approve`).then((r) => r.data);
+
+export const rejectLeave = (id) =>
+  api.put(`/api/leaves/${id}/reject`).then((r) => r.data);
+
 // ---- PAYROLL ----
 export const fetchPayroll = (params = {}) =>
   api.get("/api/payroll", { params }).then((r) => r.data);
+
+export const createPayroll = (payload) =>
+  api.post("/api/payroll", payload).then((r) => r.data);
+
+export const markPayrollPaid = (id) =>
+  api.put(`/api/payroll/${id}/pay`).then((r) => r.data);
 
 // ---- PASSWORD CHANGE ----
 export const changePassword = (id,payload) =>
@@ -74,8 +89,5 @@ export const fetchAnnouncements = () =>
 
 export const createAnnouncement = (payload) =>
   api.post("/api/announcements", payload).then((r) => r.data);
-
-export const markPayrollPaid = (id) =>
-  api.put(`/api/payroll/${id}/pay`).then((r) => r.data);
 
 export default api;

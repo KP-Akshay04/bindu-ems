@@ -1,5 +1,6 @@
 from flask import Blueprint, request, jsonify
 from datetime import date
+
 from app import db
 from app.models.payroll import Payroll
 
@@ -7,6 +8,7 @@ payroll_bp = Blueprint(
     "payroll_bp",
     __name__
 )
+
 
 @payroll_bp.route("/api/payroll", methods=["POST"])
 def create_payroll():
@@ -25,6 +27,33 @@ def create_payroll():
         data.get("deductions", 0)
     )
 
+    if basic_salary < 0:
+        return jsonify({
+            "message": "Basic salary cannot be negative"
+        }), 400
+
+    if allowances < 0:
+        return jsonify({
+            "message": "Allowances cannot be negative"
+        }), 400
+
+    if deductions < 0:
+        return jsonify({
+            "message": "Deductions cannot be negative"
+        }), 400
+
+    existing = Payroll.query.filter_by(
+        employee_id=data["employee_id"],
+        month=data["month"],
+        year=data["year"]
+    ).first()
+
+    if existing:
+        return jsonify({
+            "message":
+            "Payroll already exists for this employee and month"
+        }), 400
+
     net_salary = (
         basic_salary +
         allowances -
@@ -32,14 +61,14 @@ def create_payroll():
     )
 
     payroll = Payroll(
-    employee_id=data["employee_id"],
-    basic_salary=basic_salary,
-    allowances=allowances,
-    deductions=deductions,
-    net_salary=net_salary,
-    month=data["month"],
-    year=data["year"],
-    status="Processing"
+        employee_id=data["employee_id"],
+        basic_salary=basic_salary,
+        allowances=allowances,
+        deductions=deductions,
+        net_salary=net_salary,
+        month=data["month"],
+        year=data["year"],
+        status="Processing"
     )
 
     db.session.add(payroll)
@@ -50,10 +79,20 @@ def create_payroll():
         "net_salary": net_salary
     }), 201
 
+
 @payroll_bp.route("/api/payroll", methods=["GET"])
 def get_payroll():
 
-    payrolls = Payroll.query.all()
+    employee_id = request.args.get(
+        "employee_id"
+    )
+
+    if employee_id:
+        payrolls = Payroll.query.filter_by(
+            employee_id=employee_id
+        ).all()
+    else:
+        payrolls = Payroll.query.all()
 
     result = []
 
@@ -69,16 +108,28 @@ def get_payroll():
             "month": payroll.month,
             "year": payroll.year,
             "status": payroll.status,
-            "paid_date": str(payroll.paid_date)
+            "paid_date":
+                str(payroll.paid_date)
                 if payroll.paid_date
                 else None
-})
+        })
+
     return jsonify(result)
 
-@payroll_bp.route("/api/payroll/<int:id>/pay",methods=["PUT"])
+
+@payroll_bp.route(
+    "/api/payroll/<int:id>/pay",
+    methods=["PUT"]
+)
 def mark_paid(id):
 
     payroll = Payroll.query.get_or_404(id)
+
+    if payroll.status == "Paid":
+        return jsonify({
+            "message":
+            "Payroll already marked as paid"
+        }), 400
 
     payroll.status = "Paid"
     payroll.paid_date = date.today()
@@ -86,5 +137,6 @@ def mark_paid(id):
     db.session.commit()
 
     return jsonify({
-        "message": "Payroll marked as paid"
+        "message":
+        "Payroll marked as paid"
     })

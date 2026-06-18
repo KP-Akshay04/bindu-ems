@@ -9,6 +9,7 @@ leave_bp = Blueprint(
     __name__
 )
 
+
 @leave_bp.route("/api/leaves/apply", methods=["POST"])
 def apply_leave():
 
@@ -29,10 +30,20 @@ def apply_leave():
         "message": "Leave request submitted"
     }), 201
 
+
 @leave_bp.route("/api/leaves", methods=["GET"])
 def get_all_leaves():
 
-    leaves = LeaveRequest.query.all()
+    employee_id = request.args.get(
+        "employee_id"
+    )
+
+    if employee_id:
+        leaves = LeaveRequest.query.filter_by(
+            employee_id=employee_id
+        ).all()
+    else:
+        leaves = LeaveRequest.query.all()
 
     result = []
 
@@ -49,14 +60,35 @@ def get_all_leaves():
 
     return jsonify(result)
 
+
 @leave_bp.route("/api/leaves/<int:id>/approve", methods=["PUT"])
 def approve_leave(id):
 
     leave = LeaveRequest.query.get_or_404(id)
 
+    if leave.status == "Approved":
+        return jsonify({
+            "message": "Leave already approved"
+        }), 400
+
+    if leave.status == "Rejected":
+        return jsonify({
+            "message": "Rejected leave cannot be approved"
+        }), 400
+
     employee = Employee.query.get(
         leave.employee_id
     )
+
+    if not employee:
+        return jsonify({
+            "message": "Employee not found"
+        }), 404
+
+    if employee.leave_balance <= 0:
+        return jsonify({
+            "message": "Insufficient leave balance"
+        }), 400
 
     leave.status = "Approved"
 
@@ -65,13 +97,25 @@ def approve_leave(id):
     db.session.commit()
 
     return jsonify({
-        "message": "Leave approved"
+        "message": "Leave approved",
+        "remaining_balance": employee.leave_balance
     })
+
 
 @leave_bp.route("/api/leaves/<int:id>/reject", methods=["PUT"])
 def reject_leave(id):
 
     leave = LeaveRequest.query.get_or_404(id)
+
+    if leave.status == "Rejected":
+        return jsonify({
+            "message": "Leave already rejected"
+        }), 400
+
+    if leave.status == "Approved":
+        return jsonify({
+            "message": "Approved leave cannot be rejected"
+        }), 400
 
     leave.status = "Rejected"
 

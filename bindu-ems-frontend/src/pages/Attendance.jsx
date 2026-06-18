@@ -15,8 +15,10 @@ import EmptyState from "../components/EmptyState";
 import StatusBadge from "../components/StatusBadge";
 import { fetchAttendance } from "../services/api";
 import { extractList, formatDate, formatTime, initials } from "../utils/format";
+import { useAuth } from "../context/AuthContext";
 
 export default function Attendance() {
+  const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [items, setItems] = useState([]);
@@ -26,8 +28,13 @@ export default function Attendance() {
     setLoading(true);
     setError(null);
     try {
-      const data = await fetchAttendance();
+      const data = await fetchAttendance(
+  user?.role === "Employee"
+    ? { employee_id: user.employee_id }
+    : {}
+);
       setItems(extractList(data, "attendance"));
+      console.log(items);
     } catch (err) {
       setError(err?.response?.data?.message || err.message || "Failed to load attendance.");
     } finally {
@@ -39,9 +46,18 @@ export default function Attendance() {
 
   const today = new Date().toISOString().slice(0, 10);
   const todayList = useMemo(
-    () => items.filter((a) => String(a.date ?? a.created_at ?? "").slice(0, 10) === today),
-    [items, today]
-  );
+  () =>
+    items.filter(
+      (a) =>
+        String(
+          a.attendance_date ??
+          a.date ??
+          a.created_at ??
+          ""
+        ).slice(0, 10) === today
+    ),
+  [items, today]
+);
 
   const counts = useMemo(() => {
     const c = { present: 0, late: 0, absent: 0, leave: 0 };

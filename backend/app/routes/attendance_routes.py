@@ -15,6 +15,16 @@ def employee_login():
 
     data = request.get_json()
 
+    existing = Attendance.query.filter_by(
+        employee_id=data["employee_id"],
+        attendance_date=date.today()
+    ).first()
+
+    if existing:
+        return jsonify({
+            "message": "Attendance already recorded today"
+        }), 400
+
     attendance = Attendance(
         employee_id=data["employee_id"],
         attendance_date=date.today(),
@@ -42,6 +52,11 @@ def employee_logout(employee_id):
             "message": "Attendance record not found"
         }), 404
 
+    if attendance.logout_time:
+        return jsonify({
+            "message": "Already logged out"
+        }), 400
+
     attendance.logout_time = datetime.now()
 
     duration = (
@@ -64,7 +79,16 @@ def employee_logout(employee_id):
 @attendance_bp.route("/api/attendance", methods=["GET"])
 def get_attendance():
 
-    records = Attendance.query.all()
+    employee_id = request.args.get(
+        "employee_id"
+    )
+
+    if employee_id:
+        records = Attendance.query.filter_by(
+            employee_id=employee_id
+        ).all()
+    else:
+        records = Attendance.query.all()
 
     result = []
 

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Wallet, TrendingUp, CheckCircle2, Clock, IndianRupee, Search } from "lucide-react";
+import { Wallet, TrendingUp, CheckCircle2, Clock, IndianRupee, Search, Plus, } from "lucide-react";
 import {
   ResponsiveContainer,
   BarChart,
@@ -13,10 +13,26 @@ import LoadingSpinner from "../components/LoadingSpinner";
 import ErrorState from "../components/ErrorState";
 import EmptyState from "../components/EmptyState";
 import StatusBadge from "../components/StatusBadge";
-import { fetchPayroll, markPayrollPaid, } from "../services/api";
+import { fetchPayroll, markPayrollPaid, fetchEmployees, createPayroll, } from "../services/api";
 import { extractList, formatINR, formatDate, initials } from "../utils/format";
+import { useAuth } from "../context/AuthContext";
+
 
 export default function Payroll() {
+  const [showCreate, setShowCreate] = useState(false);
+  const [employees, setEmployees] = useState([]);
+
+  const [creating, setCreating] = useState(false);
+
+  const [payrollForm, setPayrollForm] = useState({
+    employee_id: "",
+    basic_salary: "",
+    allowances: "",
+    deductions: "",
+    month: new Date().getMonth() + 1,
+    year: new Date().getFullYear(),
+  });
+  const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [items, setItems] = useState([]);
@@ -24,19 +40,55 @@ export default function Payroll() {
   const [status, setStatus] = useState("all");
 
   const load = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const data = await fetchPayroll();
-      setItems(extractList(data, "payroll"));
-    } catch (err) {
-      setError(err?.response?.data?.message || err.message || "Failed to load payroll.");
-    } finally {
-      setLoading(false);
-    }
-  };
+  setLoading(true);
+  setError(null);
 
-  useEffect(() => { load(); }, []);
+  try {
+    const payrollData = await fetchPayroll(
+      user?.role === "Employee"
+        ? {
+            employee_id:
+              user.employee_id,
+          }
+        : {}
+    );
+
+    setItems(
+      extractList(
+        payrollData,
+        "payroll"
+      )
+    );
+
+    if (
+      user?.role !==
+      "Employee"
+    ) {
+      const employeeData =
+        await fetchEmployees();
+
+      setEmployees(
+  extractList(employeeData, "employees")
+);
+
+    }
+  } catch (err) {
+    setError(
+      err?.response?.data
+        ?.message ||
+        err.message ||
+        "Failed to load payroll."
+    );
+  } finally {
+    setLoading(false);
+  }
+};
+
+useEffect(() => {
+  if (user) {
+    load();
+  }
+}, [user]);
 
   const enriched = useMemo(
   () =>
@@ -133,6 +185,65 @@ export default function Payroll() {
   }
 };
 
+const handleCreatePayroll =
+  async (e) => {
+    e.preventDefault();
+
+    setCreating(true);
+
+    try {
+      await createPayroll({
+        employee_id: Number(
+          payrollForm.employee_id
+        ),
+        basic_salary: Number(
+          payrollForm.basic_salary
+        ),
+        allowances: Number(
+          payrollForm.allowances || 0
+        ),
+        deductions: Number(
+          payrollForm.deductions || 0
+        ),
+        month: Number(
+          payrollForm.month
+        ),
+        year: Number(
+          payrollForm.year
+        ),
+      });
+
+      alert(
+        "Payroll created successfully"
+      );
+
+      setShowCreate(false);
+
+      setPayrollForm({
+        employee_id: "",
+        basic_salary: "",
+        allowances: "",
+        deductions: "",
+        month:
+          new Date().getMonth() +
+          1,
+        year:
+          new Date().getFullYear(),
+      });
+
+      await load();
+    } catch (err) {
+      alert(
+        err?.response?.data
+          ?.message ||
+          err.message
+      );
+    } finally {
+      setCreating(false);
+    }
+  };
+
+
   const STATS = [
     { label: "Total Disbursed", value: formatINR(totals.total), icon: Wallet, accent: "from-brand-400 to-brand-600" },
     { label: "Avg. Net Pay", value: formatINR(enriched.length ? totals.total / enriched.length : 0), icon: TrendingUp, accent: "from-violet-400 to-indigo-600" },
@@ -206,6 +317,136 @@ export default function Payroll() {
         </select>
       </div>
 
+      {user?.role !== "Employee" && (
+  <div className="flex justify-end">
+    <button
+      onClick={() => setShowCreate(!showCreate)}
+      className="btn-primary"
+    >
+      <Plus className="w-4 h-4 mr-2" />
+      Generate Payroll
+    </button>
+  </div>
+)}
+
+{showCreate && (
+  <div className="glass-card p-5">
+    <h3 className="text-lg font-bold text-slate-800 mb-4">
+      Generate Payroll
+    </h3>
+
+    <form
+      onSubmit={handleCreatePayroll}
+      className="grid grid-cols-1 md:grid-cols-2 gap-4"
+    >
+      <select
+        required
+        className="input"
+        value={payrollForm.employee_id}
+        onChange={(e) =>
+          setPayrollForm({
+            ...payrollForm,
+            employee_id: e.target.value,
+          })
+        }
+      >
+        <option value="">
+          Select Employee
+        </option>
+
+        {employees.map((emp) => (
+          <option
+            key={emp.employee_id}
+            value={emp.employee_id}
+          >
+            {emp.employee_code} - {emp.full_name}
+          </option>
+        ))}
+      </select>
+
+      <input
+        type="number"
+        placeholder="Basic Salary"
+        required
+        className="input"
+        value={payrollForm.basic_salary}
+        onChange={(e) =>
+          setPayrollForm({
+            ...payrollForm,
+            basic_salary: e.target.value,
+          })
+        }
+      />
+
+      <input
+        type="number"
+        placeholder="Allowances"
+        className="input"
+        value={payrollForm.allowances}
+        onChange={(e) =>
+          setPayrollForm({
+            ...payrollForm,
+            allowances: e.target.value,
+          })
+        }
+      />
+
+      <input
+        type="number"
+        placeholder="Deductions"
+        className="input"
+        value={payrollForm.deductions}
+        onChange={(e) =>
+          setPayrollForm({
+            ...payrollForm,
+            deductions: e.target.value,
+          })
+        }
+      />
+
+      <input
+        type="number"
+        min="1"
+        max="12"
+        placeholder="Month"
+        className="input"
+        value={payrollForm.month}
+        onChange={(e) =>
+          setPayrollForm({
+            ...payrollForm,
+            month: e.target.value,
+          })
+        }
+      />
+
+      <input
+        type="number"
+        placeholder="Year"
+        className="input"
+        value={payrollForm.year}
+        onChange={(e) =>
+          setPayrollForm({
+            ...payrollForm,
+            year: e.target.value,
+          })
+        }
+      />
+
+      <div className="md:col-span-2 flex justify-end">
+        <button
+          type="submit"
+          disabled={creating}
+          className="btn-primary"
+        >
+          {creating
+            ? "Creating..."
+            : "Generate Payroll"}
+        </button>
+      </div>
+    </form>
+  </div>
+)}
+
       {filtered.length === 0 ? (
         <EmptyState title="No payroll records" message="No payslips match your filters." />
       ) : (
@@ -227,60 +468,99 @@ export default function Payroll() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {filtered.map((p, i) => {
-                  const name = p.employee_name || p.name || `Employee #${p.employee_id ?? ""}`;
-                  return (
-                    <tr key={p.id ?? i} className="hover:bg-brand-50/40">
-                      <td className="px-5 py-3">
-                        <div className="flex items-center gap-3">
-                          <span className="inline-flex items-center justify-center w-9 h-9 rounded-full ring-2 ring-brand-100 bg-gradient-to-br from-brand-400 to-brand-600 text-white text-xs font-bold">
-                            {initials(name)}
-                          </span>
-                          <div className="leading-tight">
-                            <p className="font-semibold text-slate-800">{name}</p>
-                            <p className="text-xs text-slate-500">{p.employee_id ?? "—"}</p>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-5 py-3 text-slate-700">{p.department ?? "—"}</td>
-                      <td className="px-5 py-3 font-mono text-right text-slate-700">{formatINR(p._basic)}</td>
-                      <td className="px-5 py-3 font-mono text-right text-slate-700">{formatINR(p._hra)}</td>
-                      <td className="px-5 py-3 font-mono text-right text-slate-700">{formatINR(p._allowances)}</td>
-                      <td className="px-5 py-3 font-mono text-right text-rose-600">- {formatINR(p._deductions)}</td>
-                      <td className="px-5 py-3 font-mono text-right font-bold text-brand-700">{formatINR(p._net)}</td>
-                      <td className="px-5 py-3"><StatusBadge status={p.status ?? "—"} /></td>
-                      <td className="px-5 py-3 text-slate-600">{formatDate(p.pay_date ?? p.created_at)}</td>
-                      <td className="px-5 py-3">
-  {String(p.status).toLowerCase() !==
-  "paid" ? (
-    <button
-      onClick={() =>
-        handleMarkPaid(
-          p.payroll_id
-        )
-      }
-      className="px-3 py-1 rounded-lg bg-emerald-600 text-white text-xs font-semibold hover:bg-emerald-700"
-    >
-      Mark Paid
-    </button>
-  ) : (
-    <span className="text-emerald-600 font-semibold">
-      Paid ✓
-    </span>
-  )}
-</td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+  {filtered.map((p, i) => {
+    const name =
+      p.employee_name ||
+      p.name ||
+      `Employee #${p.employee_id ?? ""}`;
+
+    return (
+      <tr
+        key={p.payroll_id ?? p.id ?? i}
+        className="hover:bg-brand-50/40"
+      >
+        <td className="px-5 py-3">
+          <div className="flex items-center gap-3">
+            <span className="inline-flex items-center justify-center w-9 h-9 rounded-full ring-2 ring-brand-100 bg-gradient-to-br from-brand-400 to-brand-600 text-white text-xs font-bold">
+              {initials(name)}
+            </span>
+
+            <div className="leading-tight">
+              <p className="font-semibold text-slate-800">
+                {name}
+              </p>
+
+              <p className="text-xs text-slate-500">
+                {p.employee_id ?? "—"}
+              </p>
+            </div>
           </div>
-          <div className="px-5 py-3 border-t border-brand-50 bg-white/60 text-xs text-slate-500 flex items-center justify-between">
-            <span>Showing {filtered.length} of {enriched.length} payslips</span>
-            <span className="font-semibold text-slate-700">Total Net: {formatINR(totals.total)}</span>
-          </div>
-        </div>
-      )}
-    </div>
-  );
+        </td>
+
+        <td className="px-5 py-3 text-slate-700">
+          {p.department ?? "—"}
+        </td>
+
+        <td className="px-5 py-3 font-mono text-right text-slate-700">
+          {formatINR(p._basic)}
+        </td>
+
+        <td className="px-5 py-3 font-mono text-right text-slate-700">
+          {formatINR(p._hra)}
+        </td>
+
+        <td className="px-5 py-3 font-mono text-right text-slate-700">
+          {formatINR(p._allowances)}
+        </td>
+
+        <td className="px-5 py-3 font-mono text-right text-rose-600">
+          - {formatINR(p._deductions)}
+        </td>
+
+        <td className="px-5 py-3 font-mono text-right font-bold text-brand-700">
+          {formatINR(p._net)}
+        </td>
+
+        <td className="px-5 py-3">
+          <StatusBadge status={p.status ?? "—"} />
+        </td>
+
+        <td className="px-5 py-3 text-slate-600">
+          {formatDate(p.pay_date ?? p.created_at)}
+        </td>
+
+        <td className="px-5 py-3">
+          {user?.role !== "Employee" ? (
+            String(p.status).toLowerCase() !== "paid" ? (
+              <button
+                onClick={() =>
+                  handleMarkPaid(
+                    p.payroll_id
+                  )
+                }
+                className="px-3 py-1 rounded-lg bg-emerald-600 text-white text-xs font-semibold hover:bg-emerald-700"
+              >
+                Mark Paid
+              </button>
+            ) : (
+              <span className="text-emerald-600 font-semibold">
+                Paid ✓
+              </span>
+            )
+          ) : (
+            <span className="text-slate-500">
+              —
+            </span>
+          )}
+        </td>
+      </tr>
+    );
+  })}
+</tbody>
+</table>
+</div>
+</div>
+)}
+</div>
+);
 }

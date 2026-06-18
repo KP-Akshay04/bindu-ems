@@ -5,10 +5,12 @@ import ErrorState from "../components/ErrorState";
 import EmptyState from "../components/EmptyState";
 import StatusBadge from "../components/StatusBadge";
 import Modal from "../components/Modal";
-import { fetchLeaves, createLeave } from "../services/api";
+import { fetchLeaves, createLeave, approveLeave, rejectLeave, } from "../services/api";
 import { extractList, formatDate, initials } from "../utils/format";
+import { useAuth } from "../context/AuthContext";
 
 export default function Leaves() {
+  const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [items, setItems] = useState([]);
@@ -17,12 +19,17 @@ export default function Leaves() {
 
   const [open, setOpen] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [form, setForm] = useState({employee_id: "", leave_type: "Casual Leave", start_date: "", end_date: "", reason: ""});
+  const [form, setForm] = useState({
+  employee_id: user?.employee_id || "", leave_type: "Casual Leave", start_date: "", end_date: "", reason: ""});
   const load = async () => {
     setLoading(true);
     setError(null);
     try {
-      const data = await fetchLeaves();
+      const data = await fetchLeaves(
+  user?.role === "Employee"
+    ? { employee_id: user.employee_id }
+    : {}
+);
       setItems(extractList(data, "leaves"));
     } catch (err) {
       setError(err?.response?.data?.message || err.message || "Failed to load leaves.");
@@ -57,7 +64,10 @@ export default function Leaves() {
     e.preventDefault();
     setSaving(true);
     try {
-      await createLeave(form);
+      await createLeave({
+  ...form,
+  employee_id: user.employee_id,
+});
       setOpen(false);
       setForm({employee_id: "", leave_type: "Casual Leave", start_date: "", end_date: "", reason: ""});
       await load();
@@ -67,6 +77,30 @@ export default function Leaves() {
       setSaving(false);
     }
   };
+
+  const handleApprove = async (leaveId) => {
+  try {
+    await approveLeave(leaveId);
+    await load();
+  } catch (err) {
+    alert(
+      err?.response?.data?.message ||
+      err.message
+    );
+  }
+};
+
+const handleReject = async (leaveId) => {
+  try {
+    await rejectLeave(leaveId);
+    await load();
+  } catch (err) {
+    alert(
+      err?.response?.data?.message ||
+      err.message
+    );
+  }
+};
 
   if (loading) return <LoadingSpinner label="Loading leaves..." />;
   if (error) return <ErrorState message={error} onRetry={load} />;
@@ -140,7 +174,9 @@ export default function Leaves() {
           {visible.map((l) => {
             const name = l.employee_name || l.name || `Employee #${l.employee_id ?? ""}`;
             return (
-              <div key={l.id} className="glass-card p-5 hover:-translate-y-0.5 transition-transform">
+              <div key={l.leave_id ?? l.id ?? `${l.employee_id}-${l.start_date}`}
+                  className="glass-card p-5 hover:-translate-y-0.5 transition-transform"
+        >
                 <div className="flex items-start justify-between gap-3 mb-4">
                   <div className="flex items-center gap-3">
                     <span className="inline-flex items-center justify-center w-11 h-11 rounded-full ring-2 ring-brand-100 bg-gradient-to-br from-brand-400 to-brand-600 text-white text-sm font-bold">
@@ -178,6 +214,34 @@ export default function Leaves() {
                   </p>
                 )}
                 <p className="text-xs text-slate-400 mt-3">Applied on {formatDate(l.applied_on ?? l.created_at)}</p>
+
+                {user?.role !== "Employee" &&
+ String(l.status).toLowerCase() === "pending" && (
+  <div className="flex gap-2 mt-4">
+    <button
+      onClick={() =>
+        handleApprove(
+          l.leave_id
+        )
+      }
+      className="px-3 py-2 rounded-lg bg-emerald-600 text-white text-sm font-semibold hover:bg-emerald-700"
+    >
+      Approve
+    </button>
+
+    <button
+      onClick={() =>
+        handleReject(
+          l.leave_id
+        )
+      }
+      className="px-3 py-2 rounded-lg bg-rose-600 text-white text-sm font-semibold hover:bg-rose-700"
+    >
+      Reject
+    </button>
+  </div>
+)}
+
               </div>
             );
           })}
@@ -192,10 +256,7 @@ export default function Leaves() {
         size="md"
       >
         <form onSubmit={submit} className="space-y-4">
-          <div>
-            <label className="label">Employee ID</label>
-            <input className="input" required value={form.employee_id} onChange={(e) => setForm({ ...form, employee_id: e.target.value })} placeholder="BWC-0001" />
-          </div>
+          
           <div>
             <label className="label">Leave Type</label>
             <select className="input" value={form.leave_type} onChange={(e) => setForm({ ...form, leave_type: e.target.value })}>
