@@ -57,6 +57,12 @@ export const attendanceLogin = (payload) =>
 export const attendanceLogout = (employee_id) =>
   api.put(`/api/attendance/logout/${employee_id}`).then((r) => r.data);
 
+export const attendanceLunchOut = (payload) =>
+  api.post("/api/attendance/lunch-out", payload).then((r) => r.data);
+
+export const attendanceLunchIn = (payload) =>
+  api.post("/api/attendance/lunch-in", payload).then((r) => r.data);
+
 // ---- LEAVES ----
 export const fetchLeaves = (params = {}) =>
   api.get("/api/leaves", { params }).then((r) => r.data);

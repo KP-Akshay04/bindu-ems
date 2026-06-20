@@ -33,6 +33,11 @@ class Attendance(db.Model):
         default=0
     )
 
+    lunch_minutes = db.Column(
+        db.Integer,
+        default=0
+    )
+
     status = db.Column(
         db.String(20),
         default="Present"

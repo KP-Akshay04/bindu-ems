@@ -2,6 +2,7 @@ from flask import Blueprint, request, jsonify
 
 from app import db
 from app.models.attendance import Attendance
+from app.models.attendance_log import AttendanceLog
 
 from datetime import datetime, date
 
@@ -10,7 +11,11 @@ attendance_bp = Blueprint(
     __name__
 )
 
-@attendance_bp.route("/api/attendance/login", methods=["POST"])
+
+@attendance_bp.route(
+    "/api/attendance/login",
+    methods=["POST"]
+)
 def employee_login():
 
     data = request.get_json()
@@ -22,24 +27,151 @@ def employee_login():
 
     if existing:
         return jsonify({
-            "message": "Attendance already recorded today"
+            "message":
+            "Attendance already recorded today"
         }), 400
 
     attendance = Attendance(
         employee_id=data["employee_id"],
         attendance_date=date.today(),
         login_time=datetime.now(),
-        status="Present"
+        status="Working"
+    )
+
+    db.session.add(attendance)
+
+    log = AttendanceLog(
+        employee_id=data["employee_id"],
+        action="LOGIN",
+        timestamp=datetime.now()
+    )
+
+    db.session.add(log)
+
+    db.session.commit()
+
+    return jsonify({
+        "message":
+        "Login recorded successfully"
+    })
+
+
+@attendance_bp.route(
+    "/api/attendance/lunch-out",
+    methods=["POST"]
+)
+def lunch_out():
+
+    print("========== LUNCH OUT ==========")
+
+    data = request.get_json()
+
+    print("DATA RECEIVED:", data)
+
+    attendance = Attendance.query.filter_by(
+        employee_id=data["employee_id"],
+        attendance_date=date.today()
+    ).first()
+
+    print("ATTENDANCE FOUND:", attendance)
+
+    if not attendance:
+
+        attendance = Attendance(
+        employee_id=data["employee_id"],
+        attendance_date=date.today(),
+        login_time=datetime.now(),
+        status="Working"
     )
 
     db.session.add(attendance)
     db.session.commit()
 
+    attendance.status = "Lunch Break"
+
+    log = AttendanceLog(
+        employee_id=data["employee_id"],
+        action="LUNCH_OUT",
+        timestamp=datetime.now()
+    )
+
+    db.session.add(log)
+    db.session.commit()
+
     return jsonify({
-        "message": "Login recorded successfully"
+        "message":
+        "Lunch break started"
     })
 
-@attendance_bp.route("/api/attendance/logout/<int:employee_id>", methods=["PUT"])
+
+@attendance_bp.route(
+    "/api/attendance/lunch-in",
+    methods=["POST"]
+)
+def lunch_in():
+
+    data = request.get_json()
+
+    attendance = Attendance.query.filter_by(
+        employee_id=data["employee_id"],
+        attendance_date=date.today()
+    ).first()
+
+    if not attendance:
+        return jsonify({
+            "message":
+            "Attendance record not found"
+        }), 404
+
+    lunch_out_log = (
+        AttendanceLog.query
+        .filter_by(
+            employee_id=data["employee_id"],
+            action="LUNCH_OUT"
+        )
+        .order_by(
+            AttendanceLog.timestamp.desc()
+        )
+        .first()
+    )
+
+    if not lunch_out_log:
+        return jsonify({
+            "message":
+            "Lunch break was not started"
+        }), 400
+
+    lunch_minutes = round(
+        (
+            datetime.now() -
+            lunch_out_log.timestamp
+        ).total_seconds() / 60
+    )
+
+    attendance.lunch_minutes += lunch_minutes
+    attendance.status = "Working"
+
+    log = AttendanceLog(
+        employee_id=data["employee_id"],
+        action="LUNCH_IN",
+        timestamp=datetime.now()
+    )
+
+    db.session.add(log)
+    db.session.commit()
+
+    return jsonify({
+        "message":
+        "Returned from lunch",
+        "lunch_minutes":
+        attendance.lunch_minutes
+    })
+
+
+@attendance_bp.route(
+    "/api/attendance/logout/<int:employee_id>",
+    methods=["PUT"]
+)
 def employee_logout(employee_id):
 
     attendance = Attendance.query.filter_by(
@@ -49,34 +181,59 @@ def employee_logout(employee_id):
 
     if not attendance:
         return jsonify({
-            "message": "Attendance record not found"
+            "message":
+            "Attendance record not found"
         }), 404
 
     if attendance.logout_time:
         return jsonify({
-            "message": "Already logged out"
+            "message":
+            "Already logged out"
         }), 400
 
     attendance.logout_time = datetime.now()
 
-    duration = (
+    total_duration = (
         attendance.logout_time -
         attendance.login_time
     )
 
+    working_seconds = (
+        total_duration.total_seconds() -
+        (attendance.lunch_minutes * 60)
+    )
+
     attendance.working_hours = round(
-        duration.total_seconds() / 3600,
+        working_seconds / 3600,
         2
     )
+
+    attendance.status = "Logged Out"
+
+    log = AttendanceLog(
+        employee_id=employee_id,
+        action="LOGOUT",
+        timestamp=datetime.now()
+    )
+
+    db.session.add(log)
 
     db.session.commit()
 
     return jsonify({
-        "message": "Logout recorded successfully",
-        "working_hours": attendance.working_hours
+        "message":
+        "Logout recorded successfully",
+        "working_hours":
+        attendance.working_hours,
+        "lunch_minutes":
+        attendance.lunch_minutes
     })
 
-@attendance_bp.route("/api/attendance", methods=["GET"])
+
+@attendance_bp.route(
+    "/api/attendance",
+    methods=["GET"]
+)
 def get_attendance():
 
     employee_id = request.args.get(
@@ -95,13 +252,29 @@ def get_attendance():
     for record in records:
 
         result.append({
-            "attendance_id": record.attendance_id,
-            "employee_id": record.employee_id,
-            "attendance_date": str(record.attendance_date),
-            "login_time": str(record.login_time),
-            "logout_time": str(record.logout_time),
-            "working_hours": record.working_hours,
-            "status": record.status
+            "attendance_id":
+            record.attendance_id,
+
+            "employee_id":
+            record.employee_id,
+
+            "attendance_date":
+            str(record.attendance_date),
+
+            "login_time":
+            str(record.login_time),
+
+            "logout_time":
+            str(record.logout_time),
+
+            "working_hours":
+            record.working_hours,
+
+            "lunch_minutes":
+            record.lunch_minutes,
+
+            "status":
+            record.status
         })
 
     return jsonify(result)

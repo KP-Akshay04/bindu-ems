@@ -26,7 +26,7 @@ import {
 } from "recharts";
 import LoadingSpinner from "../components/LoadingSpinner";
 import ErrorState from "../components/ErrorState";
-import { fetchEmployees, fetchAttendance, fetchLeaves, fetchPayroll, fetchAnnouncements, } from "../services/api";
+import { fetchEmployees, fetchAttendance, fetchLeaves, fetchPayroll, fetchAnnouncements, attendanceLunchOut, attendanceLunchIn, } from "../services/api";
 import { formatINR, extractList, initials } from "../utils/format";
 
 const PIE_COLORS = ["#0EA5E9", "#0284C7", "#38BDF8", "#F43F5E"];
@@ -42,18 +42,12 @@ export default function Dashboard() {
   const [leaves, setLeaves] = useState([]);
   const [payroll, setPayroll] = useState([]);
   const [announcements, setAnnouncements] = useState([]);
+  const [workStatus, setWorkStatus] = useState("Working");
 
   const load = async () => {
     setLoading(true);
     setError(null);
     try {
-      const [e, a, l, p] = await Promise.all([
-        fetchEmployees(),
-        fetchAttendance(),
-        fetchLeaves(),
-        fetchPayroll(),
-      ]);
-
       const [
   employeesData,
   attendanceData,
@@ -67,11 +61,78 @@ export default function Dashboard() {
   fetchPayroll(),
   fetchAnnouncements(),
 ]);
-      setEmployees(extractList(e, "employees"));
-      setAttendance(extractList(a, "attendance"));
-      setLeaves(extractList(l, "leaves"));
-      setPayroll(extractList(p, "payroll"));
-      setAnnouncements(announcementsData.slice(0, 5));
+
+setEmployees(
+  extractList(
+    employeesData,
+    "employees"
+  )
+);
+
+setAttendance(
+  extractList(
+    attendanceData,
+    "attendance"
+  )
+);
+
+setLeaves(
+  extractList(
+    leavesData,
+    "leaves"
+  )
+);
+
+setPayroll(
+  extractList(
+    payrollData,
+    "payroll"
+  )
+);
+
+setAnnouncements(
+  announcementsData.slice(0, 5)
+);
+
+const handleStatusChange = async (
+  newStatus
+) => {
+  try {
+
+    if (
+      newStatus === "Lunch Break"
+    ) {
+      await attendanceLunchOut({
+        employee_id:
+          user.employee_id,
+      });
+    }
+
+    if (
+      newStatus === "Working" &&
+      workStatus ===
+        "Lunch Break"
+    ) {
+      await attendanceLunchIn({
+        employee_id:
+          user.employee_id,
+      });
+    }
+
+    setWorkStatus(
+      newStatus
+    );
+
+  } catch (err) {
+    alert(
+      err?.response?.data
+        ?.message ||
+      err.message
+    );
+  }
+};
+
+
     } catch (err) {
       setError(err?.response?.data?.message || err.message || "Failed to load dashboard data.");
     } finally {
@@ -80,6 +141,54 @@ export default function Dashboard() {
   };
 
   useEffect(() => { load(); }, []);
+
+  const handleStatusChange = async (
+  newStatus
+) => {
+
+  try {
+
+    if (
+      newStatus === "Lunch Break"
+    ) {
+
+      await attendanceLunchOut({
+        employee_id:
+          user.employee_id,
+      });
+
+    }
+
+    if (
+      newStatus === "Working" &&
+      workStatus ===
+        "Lunch Break"
+    ) {
+
+      await attendanceLunchIn({
+        employee_id:
+          user.employee_id,
+      });
+
+    }
+
+    setWorkStatus(
+      newStatus
+    );
+
+  } catch (err) {
+
+    console.error(err);
+
+    alert(
+      err?.response?.data
+        ?.message ||
+      err.message
+    );
+
+  }
+
+};
 
   const stats = useMemo(() => {
     const total = employees.length;
@@ -196,7 +305,7 @@ export default function Dashboard() {
           accent: "from-violet-400 to-indigo-600",
         },
       ]
-    : role === "HR Admin"
+    : role === "HR"
     ? [
         {
           label: "Employees",
@@ -260,6 +369,40 @@ export default function Dashboard() {
     <h1 className="text-xl font-bold text-red-500">
       {role}
     </h1>
+
+    {role === "Employee" && (
+  <div className="glass-card p-4">
+    <div className="flex items-center justify-between">
+      <div>
+        <h3 className="font-bold text-slate-800">
+          Attendance Status
+        </h3>
+
+        <p className="text-sm text-slate-500">
+          Update your current status
+        </p>
+      </div>
+
+      <select
+        value={workStatus}
+        onChange={(e) =>
+          handleStatusChange(
+            e.target.value
+          )
+        }
+        className="input w-48"
+      >
+        <option value="Working">
+          Working
+        </option>
+
+        <option value="Lunch Break">
+          Lunch Break
+        </option>
+      </select>
+    </div>
+  </div>
+)}
 
       {/* KPI cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">

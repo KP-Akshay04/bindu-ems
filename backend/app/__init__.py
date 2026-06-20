@@ -1,4 +1,4 @@
-from flask import Flask
+from flask import Flask, app
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from flask_cors import CORS
@@ -34,6 +34,7 @@ def create_app():
     from app.models.leave_request import LeaveRequest
     from app.models.payroll import Payroll
     from app.models.attendance import Attendance
+    from app.models.attendance_log import AttendanceLog
 
     from app.routes.branch_routes import branch_bp
     from app.routes.department_routes import department_bp
@@ -55,5 +56,7 @@ def create_app():
     app.register_blueprint(dashboard_bp)
     app.register_blueprint(auth_bp)
     app.register_blueprint(announcement_bp)
+
+    print(app.url_map)
 
     return app
