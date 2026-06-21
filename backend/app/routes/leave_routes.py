@@ -16,7 +16,7 @@ def apply_leave():
     data = request.get_json()
 
     leave = LeaveRequest(
-        employee_id=data["employee_id"],
+        employee_id=employee_id,
         leave_type=data["leave_type"],
         start_date=data["start_date"],
         end_date=data["end_date"],

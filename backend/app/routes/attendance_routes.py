@@ -6,6 +6,7 @@ from app.models.attendance_log import AttendanceLog
 
 from datetime import datetime, date
 
+
 attendance_bp = Blueprint(
     "attendance_bp",
     __name__
@@ -20,18 +21,30 @@ def employee_login():
 
     data = request.get_json()
 
+    employee_id = (
+        data
+        if isinstance(data, int)
+        else data.get("employee_id")
+    )
+
+    if not employee_id:
+        return jsonify({
+            "message": "employee_id is required"
+        }), 400
+
     existing = Attendance.query.filter_by(
-        employee_id=data["employee_id"],
+        employee_id=employee_id,
         attendance_date=date.today()
     ).first()
 
     if existing:
         return jsonify({
-            "message": "Attendance already recorded today"
-        }), 400
+            "message": "Attendance already recorded today",
+            "already_logged_in": True
+        }), 200
 
     attendance = Attendance(
-        employee_id=data["employee_id"],
+        employee_id=employee_id,
         attendance_date=date.today(),
         login_time=datetime.now(),
         status="Working"
@@ -40,7 +53,7 @@ def employee_login():
     db.session.add(attendance)
 
     log = AttendanceLog(
-        employee_id=data["employee_id"],
+        employee_id=employee_id,
         action="LOGIN",
         timestamp=datetime.now()
     )
@@ -61,8 +74,14 @@ def lunch_out():
 
     data = request.get_json()
 
+    employee_id = (
+        data
+        if isinstance(data, int)
+        else data.get("employee_id")
+    )
+
     attendance = Attendance.query.filter_by(
-        employee_id=data["employee_id"],
+        employee_id=employee_id,
         attendance_date=date.today()
     ).first()
 
@@ -71,12 +90,17 @@ def lunch_out():
             "message": "Attendance record not found"
         }), 404
 
+    if attendance.lunch_end_time:
+        return jsonify({
+            "message": "Lunch break already used today"
+        }), 400
+
     attendance.status = "Lunch Break"
     attendance.lunch_start_time = datetime.now()
     attendance.lunch_end_time = None
 
     log = AttendanceLog(
-        employee_id=data["employee_id"],
+        employee_id=employee_id,
         action="LUNCH_OUT",
         timestamp=datetime.now()
     )
@@ -98,8 +122,14 @@ def lunch_in():
 
     data = request.get_json()
 
+    employee_id = (
+        data
+        if isinstance(data, int)
+        else data.get("employee_id")
+    )
+
     attendance = Attendance.query.filter_by(
-        employee_id=data["employee_id"],
+        employee_id=employee_id,
         attendance_date=date.today()
     ).first()
 
@@ -122,11 +152,11 @@ def lunch_in():
         ).total_seconds() / 60
     )
 
-    attendance.lunch_minutes += lunch_minutes
+    attendance.lunch_minutes = (attendance.lunch_minutes or 0) + lunch_minutes
     attendance.status = "Working"
 
     log = AttendanceLog(
-        employee_id=data["employee_id"],
+        employee_id=employee_id,
         action="LUNCH_IN",
         timestamp=datetime.now()
     )
@@ -171,7 +201,7 @@ def employee_logout(employee_id):
 
     working_seconds = (
         total_duration.total_seconds() -
-        (attendance.lunch_minutes * 60)
+        ((attendance.lunch_minutes or 0) * 60)
     )
 
     attendance.working_hours = round(
@@ -222,8 +252,8 @@ def get_attendance():
             "attendance_id": record.attendance_id,
             "employee_id": record.employee_id,
             "attendance_date": str(record.attendance_date),
-            "login_time": str(record.login_time),
-            "logout_time": str(record.logout_time),
+            "login_time": str(record.login_time) if record.login_time else None,
+            "logout_time": str(record.logout_time) if record.logout_time else None,
             "working_hours": record.working_hours,
             "lunch_minutes": record.lunch_minutes,
             "lunch_start_time": (

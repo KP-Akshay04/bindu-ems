@@ -166,7 +166,10 @@ export default function Attendance() {
                   <th className="px-5 py-3">Employee</th>
                   <th className="px-5 py-3">Date</th>
                   <th className="px-5 py-3">Check In</th>
+                  <th className="px-5 py-3">Lunch Out</th>
+                  <th className="px-5 py-3">Lunch In</th>
                   <th className="px-5 py-3">Check Out</th>
+                  <th className="px-5 py-3">Lunch Min</th>
                   <th className="px-5 py-3">Hours</th>
                   <th className="px-5 py-3">Status</th>
                 </tr>
@@ -189,7 +192,10 @@ export default function Attendance() {
                       </td>
                       <td className="px-5 py-3 text-slate-700">{formatDate(a.attendance_date ?? a.date ?? a.created_at)}</td>
                       <td className="px-5 py-3 font-mono text-slate-700">{formatTime(a.check_in ?? a.login_time)}</td>
+                      <td className="px-5 py-3 font-mono text-orange-600">{a.lunch_start_time? formatTime(a.lunch_start_time): "—"}</td>
+                      <td className="px-5 py-3 font-mono text-emerald-600">{a.lunch_end_time? formatTime(a.lunch_end_time): "—"}</td>
                       <td className="px-5 py-3 font-mono text-slate-700">{formatTime(a.check_out ?? a.logout_time)}</td>
+                      <td className="px-5 py-3 font-mono text-slate-700">{a.lunch_minutes ?? 0}</td>
                       <td className="px-5 py-3 font-mono text-slate-700">{a.working_hours ?? a.hours ?? a.total_hours ?? "—"}</td>
                       <td className="px-5 py-3"><StatusBadge status={a.status ?? "—"} /></td>
                     </tr>

@@ -55,6 +55,7 @@ def get_employees():
         result.append({
             "employee_id": emp.employee_id,
             "employee_code": emp.employee_code,
+            "employee_photo": emp.employee_photo,
             "full_name": emp.full_name,
             "email": emp.email,
             "phone": emp.phone,

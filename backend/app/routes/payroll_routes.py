@@ -43,7 +43,7 @@ def create_payroll():
         }), 400
 
     existing = Payroll.query.filter_by(
-        employee_id=data["employee_id"],
+        employee_id=employee_id,
         month=data["month"],
         year=data["year"]
     ).first()
@@ -61,7 +61,7 @@ def create_payroll():
     )
 
     payroll = Payroll(
-        employee_id=data["employee_id"],
+        employee_id=employee_id,
         basic_salary=basic_salary,
         allowances=allowances,
         deductions=deductions,

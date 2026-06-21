@@ -57,13 +57,21 @@ export default function Login() {
     }
     setLoading(true);
     try {
-      await login({
-        employee_id: employeeId.trim(),
-        password,
-        role,
-      });
-      navigate(from, { replace: true });
-    } catch (err) {
+  const loggedInUser = await login({
+    employee_id: employeeId.trim(),
+    password,
+    role,
+  });
+  // Auto check-in for the day (silently ignored if already checked in)
+  try {
+  const { attendanceCheckIn } = await import("../services/api");
+  await attendanceCheckIn(loggedInUser.employee_id);
+} catch (e) {
+  // expected when already checked in for the day — ignore
+}
+  navigate(from, { replace: true });
+} 
+    catch (err) {
       const msg =
         err?.response?.data?.message ||
         err?.response?.data?.error ||

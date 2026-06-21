@@ -1,4 +1,4 @@
-import { NavLink } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard,
   Users,
@@ -11,14 +11,7 @@ import {
   Bell,
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
-
-const NAV = [
-  { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { to: "/employees", label: "Employees", icon: Users },
-  { to: "/attendance", label: "Attendance", icon: ClipboardCheck },
-  { to: "/leaves", label: "Leave Management", icon: CalendarRange },
-  { to: "/payroll", label: "Payroll", icon: Wallet }, 
-];
+import { attendanceCheckOut } from "../services/api";
 
 function DropLogo({ size = 36 }) {
   return (
@@ -43,7 +36,6 @@ const NAV_ITEMS = {
     { to: "/payroll", label: "Payroll", icon: Wallet },
     { to: "/announcements", label: "Announcements", icon: Bell },
   ],
-
   "HR Admin": [
     { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
     { to: "/employees", label: "Employees", icon: Users },
@@ -52,14 +44,12 @@ const NAV_ITEMS = {
     { to: "/payroll", label: "Payroll", icon: Wallet },
     { to: "/announcements", label: "Announcements", icon: Bell },
   ],
-
   "Manager": [
     { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
     { to: "/attendance", label: "Attendance", icon: ClipboardCheck },
     { to: "/leaves", label: "Leave Approvals", icon: CalendarRange },
     { to: "/announcements", label: "Announcements", icon: Bell },
   ],
-
   "Employee": [
     { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
     { to: "/attendance", label: "My Attendance", icon: ClipboardCheck },
@@ -71,13 +61,26 @@ const NAV_ITEMS = {
 
 export default function Sidebar({ collapsed = false, onToggle, onNavigate }) {
   const { logout, user } = useAuth();
+  const navigate = useNavigate();
   const width = collapsed ? "w-[78px]" : "w-[260px]";
   const role = user?.role || "Employee";
   const NAV = NAV_ITEMS[role] || NAV_ITEMS["Employee"];
 
+  const handleSignOut = async () => {
+  try {
+    if (user?.employee_id) {
+      await attendanceCheckOut(user.employee_id);
+    }
+  } catch (e) {
+    console.error("Auto check-out issue:", e);
+  }
+
+  logout();
+  navigate("/login");
+};
+
   return (
     <aside className={`${width} h-full flex flex-col bg-white/85 backdrop-blur-xl border-r border-brand-100 shadow-[0_0_40px_-20px_rgba(2,132,199,0.25)] transition-[width] duration-200`}>
-      {/* Brand */}
       <div className="px-4 pt-6 pb-5 border-b border-brand-50 flex items-center gap-2.5">
         <DropLogo size={36} />
         {!collapsed && (
@@ -96,7 +99,6 @@ export default function Sidebar({ collapsed = false, onToggle, onNavigate }) {
         )}
       </div>
 
-      {/* Nav */}
       <nav className="flex-1 px-3 py-5 space-y-1">
         {NAV.map(({ to, label, icon: Icon }) => (
           <NavLink
@@ -122,7 +124,6 @@ export default function Sidebar({ collapsed = false, onToggle, onNavigate }) {
         ))}
       </nav>
 
-      {/* Footer */}
       <div className="px-4 pb-5">
         {!collapsed && (
           <div className="rounded-2xl bg-gradient-to-br from-brand-50 to-brand-100/70 border border-brand-100 p-4 mb-3">
@@ -136,7 +137,7 @@ export default function Sidebar({ collapsed = false, onToggle, onNavigate }) {
           </div>
         )}
         <button
-          onClick={logout}
+          onClick={handleSignOut}
           className={`w-full flex items-center gap-3 ${collapsed ? "justify-center px-2" : "px-3.5"} py-2.5 rounded-xl text-sm font-semibold text-slate-500 hover:bg-rose-50 hover:text-rose-600 transition-colors`}
           title="Sign Out"
         >

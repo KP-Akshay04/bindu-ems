@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Bell, Search, Menu, ChevronDown, Settings, LogOut, UserCircle2 } from "lucide-react";
-import { fetchAnnouncements } from "../services/api";
+import { fetchAnnouncements, attendanceCheckOut } from "../services/api";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { initials } from "../utils/format";
@@ -52,10 +52,20 @@ export default function Topbar({ title, subtitle, onOpenSidebar }) {
     );
 }, []);
 
-  const handleLogout = () => {
-    logout();
-    navigate("/login");
-  };
+  const handleLogout = async () => {
+  setMenuOpen(false);
+
+  try {
+    if (user?.employee_id) {
+      await attendanceCheckOut(user.employee_id);
+    }
+  } catch (e) {
+    console.error("Auto check-out issue:", e);
+  }
+
+  logout();
+  navigate("/login");
+};
 
   const name =
   user?.full_name ||

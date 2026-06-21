@@ -47,21 +47,25 @@ export const updateEmployee = (id, payload) =>
 export const deactivateEmployee = (id) =>
   api.put(`/api/employees/${id}/deactivate`).then((r) => r.data);
 
+
 // ---- ATTENDANCE ----
 export const fetchAttendance = (params = {}) =>
   api.get("/api/attendance", { params }).then((r) => r.data);
 
-export const attendanceLogin = (payload) =>
-  api.post("/api/attendance/login", payload).then((r) => r.data);
-
-export const attendanceLogout = (employee_id) =>
-  api.put(`/api/attendance/logout/${employee_id}`).then((r) => r.data);
+export const attendanceCheckIn = (employeeId) =>
+  api.post("/api/attendance/login", { employee_id: employeeId }).then((r) => r.data);
 
 export const attendanceLunchOut = (payload) =>
   api.post("/api/attendance/lunch-out", payload).then((r) => r.data);
 
 export const attendanceLunchIn = (payload) =>
   api.post("/api/attendance/lunch-in", payload).then((r) => r.data);
+
+export const attendanceCheckOut = (employeeId) =>
+  api.put(`/api/attendance/logout/${employeeId}`).then((r) => r.data);
+
+// Keep the old name as alias if your Dashboard.jsx still imports it
+export const attendanceLogin = attendanceCheckIn;
 
 // ---- LEAVES ----
 export const fetchLeaves = (params = {}) =>
