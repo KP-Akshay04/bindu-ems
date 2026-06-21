@@ -38,6 +38,16 @@ class Attendance(db.Model):
         default=0
     )
 
+    lunch_start_time = db.Column(
+        db.DateTime,
+        nullable=True
+    )
+
+    lunch_end_time = db.Column(
+    db.DateTime,
+    nullable=True
+    )
+
     status = db.Column(
         db.String(20),
         default="Present"

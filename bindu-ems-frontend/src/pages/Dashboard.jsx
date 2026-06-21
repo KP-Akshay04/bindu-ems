@@ -43,6 +43,9 @@ export default function Dashboard() {
   const [payroll, setPayroll] = useState([]);
   const [announcements, setAnnouncements] = useState([]);
   const [workStatus, setWorkStatus] = useState("Working");
+  const [shiftTimer, setShiftTimer] = useState("00:00:00");
+  const [lunchTimer, setLunchTimer] = useState("00:00:00");
+  const [todayAttendance, setTodayAttendance] = useState(null);
 
   const load = async () => {
     setLoading(true);
@@ -69,12 +72,43 @@ setEmployees(
   )
 );
 
-setAttendance(
+const attendanceList =
   extractList(
     attendanceData,
     "attendance"
-  )
-);
+  );
+
+setAttendance(attendanceList);
+
+const today =
+  new Date()
+    .toISOString()
+    .split("T")[0];
+
+const record =
+  attendanceList.find(
+    (a) =>
+      a.employee_id ===
+        user?.employee_id &&
+      a.attendance_date === today
+  );
+
+if (record) {
+  setTodayAttendance(record);
+
+  if (
+    record.status ===
+    "Lunch Break"
+  ) {
+    setWorkStatus(
+      "Lunch Break"
+    );
+  } else {
+    setWorkStatus(
+      "Working"
+    );
+  }
+}
 
 setLeaves(
   extractList(
@@ -94,53 +128,6 @@ setAnnouncements(
   announcementsData.slice(0, 5)
 );
 
-const handleStatusChange = async (
-  newStatus
-) => {
-  try {
-
-    if (
-      newStatus === "Lunch Break"
-    ) {
-      await attendanceLunchOut({
-        employee_id:
-          user.employee_id,
-      });
-    }
-
-    if (
-      newStatus === "Working" &&
-      workStatus ===
-        "Lunch Break"
-    ) {
-      await attendanceLunchIn({
-        employee_id:
-          user.employee_id,
-      });
-    }
-
-    setWorkStatus(
-      newStatus
-    );
-
-  } catch (err) {
-    alert(
-      err?.response?.data
-        ?.message ||
-      err.message
-    );
-  }
-};
-
-
-    } catch (err) {
-      setError(err?.response?.data?.message || err.message || "Failed to load dashboard data.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => { load(); }, []);
 
   const handleStatusChange = async (
   newStatus
@@ -189,6 +176,34 @@ const handleStatusChange = async (
   }
 
 };
+
+const formatTimer = (
+  totalSeconds
+) => {
+
+  const hrs =
+    Math.floor(
+      totalSeconds / 3600
+    );
+
+  const mins =
+    Math.floor(
+      (totalSeconds % 3600) /
+        60
+    );
+
+  const secs =
+    totalSeconds % 60;
+
+  return `${String(
+    hrs
+  ).padStart(2, "0")}:${String(
+    mins
+  ).padStart(2, "0")}:${String(
+    secs
+  ).padStart(2, "0")}`;
+};
+
 
   const stats = useMemo(() => {
     const total = employees.length;
@@ -370,38 +385,86 @@ const handleStatusChange = async (
       {role}
     </h1>
 
-    {role === "Employee" && (
-  <div className="glass-card p-4">
-    <div className="flex items-center justify-between">
-      <div>
-        <h3 className="font-bold text-slate-800">
-          Attendance Status
-        </h3>
+{role === "Employee" && (
 
-        <p className="text-sm text-slate-500">
-          Update your current status
-        </p>
-      </div>
+<div className="glass-card p-5">
 
-      <select
-        value={workStatus}
-        onChange={(e) =>
-          handleStatusChange(
-            e.target.value
-          )
-        }
-        className="input w-48"
-      >
-        <option value="Working">
-          Working
-        </option>
+  <div className="flex justify-between items-center">
 
-        <option value="Lunch Break">
-          Lunch Break
-        </option>
-      </select>
+    <div>
+
+      <h3 className="font-bold text-lg">
+        Attendance Status
+      </h3>
+
+      <p className="text-sm text-slate-500">
+        Update your current status
+      </p>
+
     </div>
+
+    <select
+      value={workStatus}
+      onChange={(e) =>
+        handleStatusChange(
+          e.target.value
+        )
+      }
+      className="input w-48"
+    >
+      <option value="Working">
+        Working
+      </option>
+
+      <option value="Lunch Break">
+        Lunch Break
+      </option>
+    </select>
+
   </div>
+
+  <div className="mt-5 grid grid-cols-1 md:grid-cols-3 gap-4">
+
+    <div className="bg-slate-50 p-4 rounded-xl">
+
+      <p className="text-sm text-slate-500">
+        Current Status
+      </p>
+
+      <p className="font-bold text-lg">
+        {workStatus}
+      </p>
+
+    </div>
+
+    <div className="bg-slate-50 p-4 rounded-xl">
+
+      <p className="text-sm text-slate-500">
+        Shift Timer
+      </p>
+
+      <p className="font-bold text-lg">
+        {shiftTimer}
+      </p>
+
+    </div>
+
+    <div className="bg-slate-50 p-4 rounded-xl">
+
+      <p className="text-sm text-slate-500">
+        Lunch Timer
+      </p>
+
+      <p className="font-bold text-lg">
+        {lunchTimer}
+      </p>
+
+    </div>
+
+  </div>
+
+</div>
+
 )}
 
       {/* KPI cards */}
@@ -553,4 +616,4 @@ const handleStatusChange = async (
       </div>
     </div>
   );
-}
+}   
