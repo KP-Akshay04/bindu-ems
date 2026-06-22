@@ -33,6 +33,9 @@ jobs:
             cd ../bindu-ems-frontend
 
             /usr/bin/npm install
+
+            chmod +x node_modules/.bin/vite
+
             /usr/bin/npm run build
 
             sudo rm -rf /var/www/bindu/*
