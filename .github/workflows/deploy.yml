@@ -1,0 +1,41 @@
+name: Deploy Bindu EMS
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Deploy to EC2
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_KEY }}
+          script: |
+            set -e
+
+            cd ~/bindu-ems
+
+            git fetch --all
+            git reset --hard origin/main
+
+            cd backend
+            source venv/bin/activate
+            pip install -r requirements.txt
+
+            sudo systemctl restart bindu
+
+            cd ../bindu-ems-frontend
+
+            /usr/bin/npm install
+            /usr/bin/npm run build
+
+            sudo rm -rf /var/www/bindu/*
+            sudo cp -r dist/* /var/www/bindu/
+
+            sudo systemctl reload nginx
