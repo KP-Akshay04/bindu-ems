@@ -233,6 +233,34 @@ useEffect(() => {
   return () => clearInterval(interval);
 }, [todayAttendance]);
 
+      // Lunch completed
+if (todayAttendance.lunch_minutes > 0) {
+  setLunchTimer(
+    formatTimer(
+      Number(todayAttendance.lunch_minutes) * 60
+    )
+  );
+}
+
+// Lunch currently running
+else if (
+  workStatus === "Lunch Break" &&
+  todayAttendance.lunch_start_time
+) {
+  const lunchStart = new Date(
+    todayAttendance.lunch_start_time
+  );
+
+  if (!isNaN(lunchStart.getTime())) {
+    setLunchTimer(
+      formatTimer(
+        Math.floor(
+          (now - lunchStart) / 1000
+        )
+      )
+    );
+  }
+}
   // ---- DERIVED ----
   const stats = useMemo(() => {
     const total = employees.length;
