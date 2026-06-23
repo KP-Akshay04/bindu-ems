@@ -37,6 +37,7 @@ import {
   attendanceLunchIn,
 } from "../services/api";
 import { formatINR, extractList, initials } from "../utils/format";
+import { useNavigate } from "react-router-dom";
 
 const PIE_COLORS = ["#0EA5E9", "#0284C7", "#38BDF8", "#F43F5E"];
 
@@ -50,6 +51,7 @@ const formatTimer = (totalSeconds) => {
 
 export default function Dashboard() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const role = user?.role || "Employee";
 
   const [loading, setLoading] = useState(true);
@@ -468,9 +470,40 @@ console.log(
           const Icon = s.icon;
           return (
             <div
-              key={s.label}
-              className="glass-card p-5 hover:-translate-y-0.5 transition-transform duration-300"
-            >
+  key={s.label}
+  onClick={() => {
+    if (
+      s.label === "Total Employees" ||
+      s.label === "Employees"
+    ) {
+      navigate("/employees");
+    }
+
+    if (
+      s.label === "Present Today" ||
+      s.label === "Attendance"
+    ) {
+      navigate("/attendance");
+    }
+
+    if (
+      s.label === "On Leave" ||
+      s.label === "Approved Leaves" ||
+      s.label === "Leave Status"
+    ) {
+      navigate("/leave-management");
+    }
+
+    if (
+      s.label === "Monthly Payroll"
+    ) {
+      navigate("/payroll");
+    }
+  }}
+  className="glass-card p-5 hover:-translate-y-0.5 transition-transform duration-300 cursor-pointer"
+>
+
+
               <div className="flex items-start justify-between mb-4">
                 <div
                   className={`w-11 h-11 rounded-xl bg-gradient-to-br ${s.accent} flex items-center justify-center shadow-md`}
