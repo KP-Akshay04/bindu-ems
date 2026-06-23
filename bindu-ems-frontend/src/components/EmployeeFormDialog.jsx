@@ -115,7 +115,6 @@ export default function EmployeeFormDialog({ open, onClose, onSubmit, initial, l
     onChange={update("role")}
   >
     <option>Employee</option>
-    <option>Manager</option>
     <option>HR Admin</option>
     <option>Super Admin</option>
   </select>

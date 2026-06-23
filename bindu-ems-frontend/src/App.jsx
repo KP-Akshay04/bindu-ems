@@ -33,12 +33,12 @@ export default function App() {
     </RoleProtectedRoute>
   }
 />
-            <Route path="/attendance"element={<RoleProtectedRoute allowedRoles={["Super Admin","HR Admin","Manager","Employee",]}>
+            <Route path="/attendance"element={<RoleProtectedRoute allowedRoles={["Super Admin","HR Admin","Employee",]}>
       <Attendance />
     </RoleProtectedRoute>
   }
 />
-            <Route path="/leaves"element={<RoleProtectedRoute allowedRoles={["Super Admin","HR Admin","Manager","Employee",]}>
+            <Route path="/leaves"element={<RoleProtectedRoute allowedRoles={["Super Admin","HR Admin","Employee",]}>
       <Leaves />
     </RoleProtectedRoute>
   }

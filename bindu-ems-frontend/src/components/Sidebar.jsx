@@ -44,12 +44,6 @@ const NAV_ITEMS = {
     { to: "/payroll", label: "Payroll", icon: Wallet },
     { to: "/announcements", label: "Announcements", icon: Bell },
   ],
-  "Manager": [
-    { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-    { to: "/attendance", label: "Attendance", icon: ClipboardCheck },
-    { to: "/leaves", label: "Leave Approvals", icon: CalendarRange },
-    { to: "/announcements", label: "Announcements", icon: Bell },
-  ],
   "Employee": [
     { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
     { to: "/attendance", label: "My Attendance", icon: ClipboardCheck },

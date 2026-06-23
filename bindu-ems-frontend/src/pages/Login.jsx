@@ -16,7 +16,6 @@ import { useAuth } from "../context/AuthContext";
 
 const ROLES = [
   { id: "hr", label: "HR", icon: Shield },
-  { id: "manager", label: "Manager", icon: Users },
   { id: "employee", label: "Employee", icon: UserIcon },
 ];
 

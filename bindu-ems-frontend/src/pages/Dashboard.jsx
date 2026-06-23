@@ -321,11 +321,6 @@ useEffect(() => {
           { label: "Present Today", value: stats.present, delta: "Attendance", icon: UserCheck, accent: "from-emerald-400 to-teal-600" },
           { label: "Approved Leaves", value: stats.onLeave, delta: "Leave requests", icon: CalendarDays, accent: "from-amber-400 to-orange-500" },
         ]
-      : role === "Manager"
-      ? [
-          { label: "Attendance", value: stats.present, delta: "Team activity", icon: UserCheck, accent: "from-emerald-400 to-teal-600" },
-          { label: "Leaves", value: stats.onLeave, delta: "Team requests", icon: CalendarDays, accent: "from-amber-400 to-orange-500" },
-        ]
       : [
           { label: "Attendance", value: stats.present, delta: "My attendance", icon: UserCheck, accent: "from-emerald-400 to-teal-600" },
           { label: "Leave Status", value: stats.onLeave, delta: "My leaves", icon: CalendarDays, accent: "from-amber-400 to-orange-500" },
