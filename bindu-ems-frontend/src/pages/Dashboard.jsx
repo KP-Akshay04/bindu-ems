@@ -194,80 +194,83 @@ useEffect(() => {
 }, [])
 
   // ---- TIMERS ----
-  useEffect(() => {
+useEffect(() => {
   if (!todayAttendance) return;
 
-  console.log(
-  "LUNCH DEBUG",
-  todayAttendance.lunch_minutes,
-  todayAttendance.lunch_start_time,
-  todayAttendance.lunch_end_time
-);
-
-  // Employee already logged out today
+  // Shift already completed today
   if (todayAttendance.logout_time) {
-    const hours = Number(todayAttendance.working_hours || 0);
+    const hours = Number(
+      todayAttendance.working_hours || 0
+    );
 
     setShiftTimer(
       formatTimer(
         Math.floor(hours * 3600)
       )
     );
+  } else {
+    const interval = setInterval(() => {
+      const now = new Date();
 
-    return;
+      if (todayAttendance.login_time) {
+        const login = new Date(
+          todayAttendance.login_time
+        );
+
+        if (!isNaN(login.getTime())) {
+          setShiftTimer(
+            formatTimer(
+              Math.floor(
+                (now - login) / 1000
+              )
+            )
+          );
+        }
+      }
+    }, 1000);
+
+    return () => clearInterval(interval);
   }
 
-  const interval = setInterval(() => {
-    const now = new Date();
+  // Lunch already completed
+  if (
+    Number(todayAttendance.lunch_minutes || 0) > 0
+  ) {
+    setLunchTimer(
+      formatTimer(
+        Number(todayAttendance.lunch_minutes) * 60
+      )
+    );
+  }
 
-    if (todayAttendance.login_time) {
-      const login = new Date(
-        todayAttendance.login_time
+  // Lunch currently running
+  else if (
+    workStatus === "Lunch Break" &&
+    todayAttendance.lunch_start_time
+  ) {
+    const lunchInterval = setInterval(() => {
+      const now = new Date();
+
+      const lunchStart = new Date(
+        todayAttendance.lunch_start_time
       );
 
-      if (!isNaN(login.getTime())) {
-        setShiftTimer(
+      if (!isNaN(lunchStart.getTime())) {
+        setLunchTimer(
           formatTimer(
             Math.floor(
-              (now - login) / 1000
+              (now - lunchStart) / 1000
             )
           )
         );
       }
-    }
-  }, 1000);
+    }, 1000);
 
-  return () => clearInterval(interval);
-}, [todayAttendance]);
-
-      // Lunch completed
-if (todayAttendance.lunch_minutes > 0) {
-  setLunchTimer(
-    formatTimer(
-      Number(todayAttendance.lunch_minutes) * 60
-    )
-  );
-}
-
-// Lunch currently running
-else if (
-  workStatus === "Lunch Break" &&
-  todayAttendance.lunch_start_time
-) {
-  const lunchStart = new Date(
-    todayAttendance.lunch_start_time
-  );
-
-  if (!isNaN(lunchStart.getTime())) {
-    setLunchTimer(
-      formatTimer(
-        Math.floor(
-          (now - lunchStart) / 1000
-        )
-      )
-    );
+    return () => clearInterval(lunchInterval);
   }
-}
+
+}, [todayAttendance, workStatus]);
+
   // ---- DERIVED ----
   const stats = useMemo(() => {
     const total = employees.length;
