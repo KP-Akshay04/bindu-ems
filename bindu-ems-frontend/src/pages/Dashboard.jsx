@@ -95,9 +95,16 @@ export default function Dashboard() {
       setAttendance(attendanceList);
 
       // Find today's attendance for the logged-in employee
-      const today = new Date().toLocaleDateString("en-CA");
+      const today = new Date()
+  .toISOString()
+  .slice(0, 10);
 
-      console.log("TODAY =", today);
+  console.log("TODAY =", today);
+console.log(
+  "DATES FROM API =",
+  attendanceList.map((a) => a.attendance_date)
+);
+
 
 console.log(
   "ATTENDANCE LIST =",
@@ -105,12 +112,13 @@ console.log(
     (a) => String(a.employee_id) === String(user?.employee_id)
   )
 );
-
+      console.log("CURRENT USER =", user);
+      console.log("USER EMPLOYEE ID =", user?.employee_id);
 
       const record = attendanceList.find(
         (a) =>
           String(a.employee_id) === String(user?.employee_id) &&
-          (a.attendance_date === today || String(a.date ?? "").slice(0, 10) === today)
+          String(a.attendance_date ?? "").slice(0, 10) === today
       );
 
       if (record) {
