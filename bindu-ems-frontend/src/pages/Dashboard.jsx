@@ -491,7 +491,7 @@ console.log(
       s.label === "Approved Leaves" ||
       s.label === "Leave Status"
     ) {
-      navigate("/leave-management");
+      navigate("/leaves");
     }
 
     if (
