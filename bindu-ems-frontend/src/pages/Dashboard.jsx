@@ -197,6 +197,13 @@ useEffect(() => {
   useEffect(() => {
   if (!todayAttendance) return;
 
+  console.log(
+  "LUNCH DEBUG",
+  todayAttendance.lunch_minutes,
+  todayAttendance.lunch_start_time,
+  todayAttendance.lunch_end_time
+);
+
   // Employee already logged out today
   if (todayAttendance.logout_time) {
     const hours = Number(todayAttendance.working_hours || 0);
