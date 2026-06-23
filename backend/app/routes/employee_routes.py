@@ -34,7 +34,7 @@ def create_employee():
 
         designation=data.get("designation"),
         role=data.get("role", "Employee"),
-        basic_salary=data.get("basic_salary", 0)
+        basic_salary=data.get("basic_salary", 0),
         shift_id=data.get("shift_id"),
     )
 
@@ -68,7 +68,7 @@ def get_employees():
             "role": emp.role,
             "basic_salary": emp.basic_salary,
             "leave_balance": emp.leave_balance,
-            "status": emp.status
+            "status": emp.status,
             "shift_id": emp.shift_id,
         })
 
