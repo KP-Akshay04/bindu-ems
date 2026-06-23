@@ -10,6 +10,7 @@ const TITLES = {
   "/attendance": { title: "Attendance", subtitle: "Daily check-ins & presence tracking" },
   "/leaves": { title: "Leave Management", subtitle: "Approve requests & balances" },
   "/payroll": { title: "Payroll", subtitle: "Monthly compensation & disbursals" },
+  "/shifts": { title: "Shift Management", subtitle: "Manage company work shifts"},
 };
 
 export default function DashboardLayout() {

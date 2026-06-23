@@ -12,6 +12,7 @@ import RoleProtectedRoute from "./components/RoleProtectedRoute";
 import Profile from "./pages/Profile";
 import Settings from "./pages/Settings";
 import Announcements from "./pages/Announcements";
+import ShiftManagement from "./pages/ShiftManagement";
 
 export default function App() {
   return (
@@ -45,6 +46,12 @@ export default function App() {
 />
             <Route path="/payroll"element={<RoleProtectedRoute allowedRoles={["Super Admin","HR Admin","Employee",]}>
       <Payroll />
+    </RoleProtectedRoute>
+  }
+/>
+
+            <Route path="/shifts"element={<RoleProtectedRoute allowedRoles={["Super Admin", "HR Admin",]}>
+      <ShiftManagement />
     </RoleProtectedRoute>
   }
 />
