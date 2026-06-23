@@ -9,6 +9,7 @@ import {
   Waves,
   ChevronLeft,
   Bell,
+  Clock3,
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { attendanceCheckOut } from "../services/api";
@@ -35,6 +36,7 @@ const NAV_ITEMS = {
     { to: "/leaves", label: "Leave Management", icon: CalendarRange },
     { to: "/payroll", label: "Payroll", icon: Wallet },
     { to: "/announcements", label: "Announcements", icon: Bell },
+    { to: "/shifts", label: "Shift Management", icon: Clock3 },
   ],
   "HR Admin": [
     { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -43,6 +45,7 @@ const NAV_ITEMS = {
     { to: "/leaves", label: "Leave Management", icon: CalendarRange },
     { to: "/payroll", label: "Payroll", icon: Wallet },
     { to: "/announcements", label: "Announcements", icon: Bell },
+    { to: "/shifts", label: "Shift Management", icon: Clock3 },
   ],
   "Employee": [
     { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
