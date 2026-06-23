@@ -195,28 +195,43 @@ useEffect(() => {
 
   // ---- TIMERS ----
   useEffect(() => {
-    if (!todayAttendance) return;
+  if (!todayAttendance) return;
 
-    const interval = setInterval(() => {
-      const now = new Date();
+  // Employee already logged out today
+  if (todayAttendance.logout_time) {
+    const hours = Number(todayAttendance.working_hours || 0);
 
-      if (todayAttendance.login_time) {
-        const login = new Date(todayAttendance.login_time);
-        if (!isNaN(login.getTime())) {
-          setShiftTimer(formatTimer(Math.floor((now - login) / 1000)));
-        }
+    setShiftTimer(
+      formatTimer(
+        Math.floor(hours * 3600)
+      )
+    );
+
+    return;
+  }
+
+  const interval = setInterval(() => {
+    const now = new Date();
+
+    if (todayAttendance.login_time) {
+      const login = new Date(
+        todayAttendance.login_time
+      );
+
+      if (!isNaN(login.getTime())) {
+        setShiftTimer(
+          formatTimer(
+            Math.floor(
+              (now - login) / 1000
+            )
+          )
+        );
       }
+    }
+  }, 1000);
 
-      if (workStatus === "Lunch Break" && todayAttendance.lunch_start_time) {
-        const lunchStart = new Date(todayAttendance.lunch_start_time);
-        if (!isNaN(lunchStart.getTime())) {
-          setLunchTimer(formatTimer(Math.floor((now - lunchStart) / 1000)));
-        }
-      }
-    }, 1000);
-
-    return () => clearInterval(interval);
-  }, [todayAttendance, workStatus]);
+  return () => clearInterval(interval);
+}, [todayAttendance]);
 
   // ---- DERIVED ----
   const stats = useMemo(() => {
