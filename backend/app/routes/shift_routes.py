@@ -45,4 +45,50 @@ def create_shift():
 
     return jsonify({
         "message": "Shift created successfully"
+    })
+
+@shift_bp.route("/api/shifts/<int:id>", methods=["PUT"])
+def update_shift(id):
+
+    shift = Shift.query.get_or_404(id)
+
+    data = request.get_json()
+
+    shift.shift_name = data.get(
+        "shift_name",
+        shift.shift_name
+    )
+
+    shift.start_time = data.get(
+        "start_time",
+        shift.start_time
+    )
+
+    shift.end_time = data.get(
+        "end_time",
+        shift.end_time
+    )
+
+    shift.grace_minutes = data.get(
+        "grace_minutes",
+        shift.grace_minutes
+    )
+
+    db.session.commit()
+
+    return jsonify({
+        "message": "Shift updated successfully"
+    })
+
+
+@shift_bp.route("/api/shifts/<int:id>", methods=["DELETE"])
+def delete_shift(id):
+
+    shift = Shift.query.get_or_404(id)
+
+    db.session.delete(shift)
+    db.session.commit()
+
+    return jsonify({
+        "message": "Shift deleted successfully"
     }), 201
