@@ -104,8 +104,6 @@ console.log(
   )
 );
 
-return { total, present, onLeave, monthlyPayroll };
-
 
       const record = attendanceList.find(
         (a) =>
@@ -229,15 +227,17 @@ const present = attendance.filter((a) => {
 
   const s = String(a.status ?? "").toLowerCase();
 
-  return (
-    dateMatch &&
-    (
-      s === "present" ||
-      s === "checked-in" ||
-      s === "late" ||
-      s === "working"
-    )
-  );
+return (
+  dateMatch &&
+  (
+    s === "present" ||
+    s === "checked-in" ||
+    s === "late" ||
+    s === "working" ||
+    s === "lunch break" ||
+    s === "logged out"
+  )
+);
 }).length;
     const onLeave = leaves.filter(
       (l) => String(l.status ?? "").toLowerCase() === "approved"
