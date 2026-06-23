@@ -99,6 +99,10 @@ export default function Dashboard() {
   .toISOString()
   .slice(0, 10);
 
+  console.log("CURRENT USER =", user);
+  console.log("USER EMPLOYEE ID =", user?.employee_id);
+  console.log("TODAY =", today);
+
   console.log("TODAY =", today);
 console.log(
   "DATES FROM API =",
