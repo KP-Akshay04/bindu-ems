@@ -35,6 +35,7 @@ def create_app():
     from app.models.payroll import Payroll
     from app.models.attendance import Attendance
     from app.models.attendance_log import AttendanceLog
+    from app.models.shift import Shift
 
     from app.routes.branch_routes import branch_bp
     from app.routes.department_routes import department_bp
