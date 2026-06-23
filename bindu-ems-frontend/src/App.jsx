@@ -13,6 +13,7 @@ import Profile from "./pages/Profile";
 import Settings from "./pages/Settings";
 import Announcements from "./pages/Announcements";
 import ShiftManagement from "./pages/ShiftManagement";
+import Shifts from "./pages/Shifts";
 
 export default function App() {
   return (
@@ -59,6 +60,7 @@ export default function App() {
             <Route path="/profile" element={<Profile />} />
             <Route path="/settings" element={<Settings />} />
             <Route path="/announcements" element={<Announcements />} />
+            <Route path="/shifts" element={<Shifts />} />
 
           </Route>
           <Route path="*" element={<Navigate to="/login" replace />} />
