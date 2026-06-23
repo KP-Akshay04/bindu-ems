@@ -12,7 +12,6 @@ import RoleProtectedRoute from "./components/RoleProtectedRoute";
 import Profile from "./pages/Profile";
 import Settings from "./pages/Settings";
 import Announcements from "./pages/Announcements";
-import ShiftManagement from "./pages/ShiftManagement";
 import Shifts from "./pages/Shifts";
 
 export default function App() {
