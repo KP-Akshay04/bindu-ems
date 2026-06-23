@@ -119,6 +119,8 @@ console.log(
 
   setTodayAttendance(record);
 
+  console.log("TODAY ATTENDANCE =", record);
+
   const status = String(record.status || "").trim().toLowerCase();
 
   setWorkStatus(
