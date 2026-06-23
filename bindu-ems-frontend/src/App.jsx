@@ -51,7 +51,7 @@ export default function App() {
 />
 
             <Route path="/shifts"element={<RoleProtectedRoute allowedRoles={["Super Admin", "HR Admin",]}>
-      <ShiftManagement />
+      <Shifts />
     </RoleProtectedRoute>
   }
 />
@@ -59,7 +59,7 @@ export default function App() {
             <Route path="/profile" element={<Profile />} />
             <Route path="/settings" element={<Settings />} />
             <Route path="/announcements" element={<Announcements />} />
-            <Route path="/shifts" element={<Shifts />} />
+
 
           </Route>
           <Route path="*" element={<Navigate to="/login" replace />} />
