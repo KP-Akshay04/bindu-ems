@@ -246,6 +246,7 @@ return (
       (sum, p) => sum + Number(p.net ?? p.net_pay ?? p.amount ?? 0),
       0
     );
+    console.log("ALL ATTENDANCE =", attendance);
     return { total, present, onLeave, monthlyPayroll };
   }, [employees, attendance, leaves, payroll]);
 
