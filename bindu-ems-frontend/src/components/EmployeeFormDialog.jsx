@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { getShifts } from "../services/shiftService";
 import Modal from "./Modal";
 
 const EMPTY = {
@@ -9,11 +10,27 @@ const EMPTY = {
   phone: "",
   designation: "",
   role: "Employee",
+  shift_id: "",
 };
 
 export default function EmployeeFormDialog({ open, onClose, onSubmit, initial, loading }) {
   const [form, setForm] = useState(EMPTY);
   const isEdit = Boolean(initial?.id);
+
+  const [shifts, setShifts] = useState([]);
+
+useEffect(() => {
+  const loadShifts = async () => {
+    try {
+      const res = await getShifts();
+      setShifts(res.data);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  loadShifts();
+}, []);
 
   useEffect(() => {
     if (open) {
@@ -25,6 +42,7 @@ export default function EmployeeFormDialog({ open, onClose, onSubmit, initial, l
         phone: initial?.phone ?? "",
         designation: initial?.designation ?? "",
         role: initial?.role ?? "Employee",
+        shift_id: initial?.shift_id ?? "",
       });
     }
   }, [open, initial]);
@@ -105,6 +123,27 @@ export default function EmployeeFormDialog({ open, onClose, onSubmit, initial, l
     onChange={update("password")}
     placeholder="password123"
   />
+</div>
+
+<div>
+  <label className="label">Shift</label>
+
+  <select
+    className="input"
+    value={form.shift_id}
+    onChange={update("shift_id")}
+  >
+    <option value="">Select Shift</option>
+
+    {shifts.map((shift) => (
+      <option
+        key={shift.shift_id}
+        value={shift.shift_id}
+      >
+        {shift.shift_name}
+      </option>
+    ))}
+  </select>
 </div>
 
 <div>
