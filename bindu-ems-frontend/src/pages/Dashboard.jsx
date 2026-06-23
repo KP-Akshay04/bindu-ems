@@ -104,6 +104,9 @@ console.log(
   )
 );
 
+return { total, present, onLeave, monthlyPayroll };
+
+
       const record = attendanceList.find(
         (a) =>
           String(a.employee_id) === String(user?.employee_id) &&
