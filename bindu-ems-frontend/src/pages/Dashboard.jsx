@@ -219,11 +219,19 @@ useEffect(() => {
   // ---- DERIVED ----
   const stats = useMemo(() => {
     const total = employees.length;
-    const today = new Date().toLocaleDateString("en-CA");
+    const today = new Date().toISOString().slice(0, 10);
 
 const present = attendance.filter((a) => {
   const dateMatch =
-    a.attendance_date === today;
+    String(a.attendance_date).slice(0, 10) === today;
+
+    console.log(
+  "PRESENT TODAY",
+  attendance.filter(
+    (a) =>
+      String(a.attendance_date).slice(0, 10) === today
+  )
+);
 
   const s = String(a.status ?? "").toLowerCase();
 
