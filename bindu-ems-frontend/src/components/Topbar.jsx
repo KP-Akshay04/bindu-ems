@@ -163,7 +163,7 @@ export default function Topbar({ title, subtitle, onOpenSidebar }) {
         >
           {user?.employee_photo ? (
   <img
-    src={`http://127.0.0.1:5000/${user.employee_photo.replace(/\\/g, "/")}`}
+    src={`${window.location.origin}/${user.employee_photo.replace(/\\/g, "/")}`}
     alt="Profile"
     className="w-8 h-8 rounded-full object-cover ring-2 ring-brand-100"
   />
@@ -185,7 +185,7 @@ export default function Topbar({ title, subtitle, onOpenSidebar }) {
     <div className="px-3 py-2 border-b border-slate-100 flex items-center gap-3">
       {user?.employee_photo ? (
         <img
-          src={`http://127.0.0.1:5000/${user.employee_photo.replace(/\\/g, "/")}`}
+          src={`${window.location.origin}/${user.employee_photo.replace(/\\/g, "/")}`}
           alt="Profile"
           className="w-10 h-10 rounded-full object-cover"
         />

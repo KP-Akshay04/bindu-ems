@@ -46,7 +46,7 @@ export default function Profile() {
         <div className="w-28 h-28 mx-auto">
   {user?.employee_photo ? (
     <img
-      src={`http://127.0.0.1:5000/${(user.employee_photo || "").replace(/\\/g, "/")}`}
+      src={`${window.location.origin}/${user.employee_photo.replace(/\\/g, "/")}`}
       alt="Profile"
       className="w-28 h-28 rounded-full object-cover border-4 border-white shadow-lg"
     />
