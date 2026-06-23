@@ -247,9 +247,39 @@ return (
   )
 );
 }).length;
-    const onLeave = leaves.filter(
-      (l) => String(l.status ?? "").toLowerCase() === "approved"
-    ).length;
+    const today = new Date().toISOString().slice(0, 10);
+
+const onLeave = leaves.filter((l) => {
+  const status =
+    String(l.status ?? "").toLowerCase() === "approved";
+
+  const start =
+    String(l.start_date).slice(0, 10);
+
+  const end =
+    String(l.end_date).slice(0, 10);
+
+  return status && today >= start && today <= end;
+}).length;
+
+console.log("LEAVES =", leaves);
+
+console.log(
+  "ACTIVE LEAVES",
+  leaves.filter((l) => {
+    const status =
+      String(l.status ?? "").toLowerCase() === "approved";
+
+    const start =
+      String(l.start_date).slice(0, 10);
+
+    const end =
+      String(l.end_date).slice(0, 10);
+
+    return status && today >= start && today <= end;
+  })
+);
+
     const monthlyPayroll = payroll.reduce(
       (sum, p) => sum + Number(p.net ?? p.net_pay ?? p.amount ?? 0),
       0
