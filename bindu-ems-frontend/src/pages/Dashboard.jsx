@@ -218,10 +218,24 @@ useEffect(() => {
   // ---- DERIVED ----
   const stats = useMemo(() => {
     const total = employees.length;
-    const present = attendance.filter((a) => {
-      const s = String(a.status ?? "").toLowerCase();
-      return s === "present" || s === "checked-in" || s === "late" || s === "working";
-    }).length;
+    const today = new Date().toLocaleDateString("en-CA");
+
+const present = attendance.filter((a) => {
+  const dateMatch =
+    a.attendance_date === today;
+
+  const s = String(a.status ?? "").toLowerCase();
+
+  return (
+    dateMatch &&
+    (
+      s === "present" ||
+      s === "checked-in" ||
+      s === "late" ||
+      s === "working"
+    )
+  );
+}).length;
     const onLeave = leaves.filter(
       (l) => String(l.status ?? "").toLowerCase() === "approved"
     ).length;
