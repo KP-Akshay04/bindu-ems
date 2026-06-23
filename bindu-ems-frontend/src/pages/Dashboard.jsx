@@ -247,7 +247,6 @@ return (
   )
 );
 }).length;
-    const today = new Date().toISOString().slice(0, 10);
 
 const onLeave = leaves.filter((l) => {
   const status =
