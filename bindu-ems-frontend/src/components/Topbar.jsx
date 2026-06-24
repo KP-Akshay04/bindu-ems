@@ -174,8 +174,17 @@ export default function Topbar({ title, subtitle, onOpenSidebar }) {
 )}
 
           <span className="hidden sm:block text-left leading-tight">
-            <p className="text-sm font-semibold text-slate-800 max-w-[140px] truncate">{name}</p>
-            <p className="text-[11px] text-brand-600 font-semibold uppercase tracking-wider">{role}</p>
+            <p className="text-sm font-semibold text-slate-800 max-w-[180px] truncate">
+  {name}
+</p>
+
+<p className="text-[11px] text-slate-500">
+  {user?.employee_code || "N/A"}
+</p>
+
+<p className="text-[11px] text-brand-600 font-semibold uppercase tracking-wider">
+  {role}
+</p>
           </span>
           <ChevronDown className="w-4 h-4 text-slate-400 hidden sm:block" />
         </button>
@@ -200,9 +209,15 @@ export default function Topbar({ title, subtitle, onOpenSidebar }) {
           {name}
         </p>
 
-        <p className="text-xs text-slate-500 truncate">
-          {user?.email || user?.employee_id}
-        </p>
+        <>
+  <p className="text-xs text-slate-500 truncate">
+    {user?.employee_code}
+  </p>
+
+  <p className="text-xs text-slate-400 truncate">
+    {user?.role}
+  </p>
+</>
       </div>
     </div>
 
