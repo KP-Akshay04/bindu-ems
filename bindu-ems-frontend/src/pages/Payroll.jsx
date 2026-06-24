@@ -487,12 +487,12 @@ const handleCreatePayroll =
 
             <div className="leading-tight">
               <p className="font-semibold text-slate-800">
-                {name}
-              </p>
+  {p.employee_name || p.full_name || name}
+</p>
 
-              <p className="text-xs text-slate-500">
-                {p.employee_id ?? "—"}
-              </p>
+<p className="text-xs text-slate-500">
+  {p.employee_code || `EMP${p.employee_id}`} · {p.role || "Employee"}
+</p>
             </div>
           </div>
         </td>

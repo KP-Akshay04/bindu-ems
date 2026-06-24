@@ -185,8 +185,13 @@ export default function Attendance() {
                             {initials(name)}
                           </span>
                           <div className="leading-tight">
-                            <p className="font-semibold text-slate-800">{name}</p>
-                            <p className="text-xs text-slate-500">{a.employee_id ?? "—"}</p>
+                            <p className="font-semibold text-slate-800">
+  {a.employee_name || a.full_name || name}
+</p>
+
+<p className="text-xs text-slate-500">
+  {a.employee_code || `EMP${a.employee_id}`} · {a.role || "Employee"}
+</p>
                           </div>
                         </div>
                       </td>

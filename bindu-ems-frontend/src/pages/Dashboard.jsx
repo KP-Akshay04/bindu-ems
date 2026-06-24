@@ -457,9 +457,15 @@ console.log(
         <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-brand-100 text-brand-700">
           {role}
         </span>
-        <span className="text-sm text-slate-500">
-          Welcome back{user?.name ? `, ${user.name}` : ""}.
-        </span>
+        <div className="flex flex-col">
+  <span className="font-semibold text-slate-800">
+    {user?.full_name}
+  </span>
+
+  <span className="text-sm text-slate-500">
+    {user?.employee_code} · {user?.role}
+  </span>
+</div>
       </div>
 
       {/* Employee work status / timers */}

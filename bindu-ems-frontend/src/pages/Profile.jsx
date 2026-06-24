@@ -78,11 +78,15 @@ export default function Profile() {
         </div>
       </div>
 
+
       <div className="glass-card p-6">
         <h3 className="text-lg font-bold text-slate-800 mb-4">
           Employee Information
         </h3>
         <div className="grid md:grid-cols-2 gap-4">
+          <Info label="Full Name" value={user?.full_name}/>
+          <Info label="Shift" value={user?.shift_name}/>
+          <Info label="Branch" value={user?.branch_name}  />
           <Info label="Employee Code" value={user?.employee_code} />
           <Info label="Email" value={user?.email} />
           <Info label="Phone" value={user?.phone} />

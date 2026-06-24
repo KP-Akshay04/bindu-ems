@@ -183,8 +183,13 @@ const handleReject = async (leaveId) => {
                       {initials(name)}
                     </span>
                     <div className="leading-tight">
-                      <p className="font-semibold text-slate-800">{name}</p>
-                      <p className="text-xs text-slate-500">{l.employee_id ?? "—"} · {l.id ?? "—"}</p>
+                      <p className="font-semibold text-slate-800">
+  {l.employee_name || l.full_name || name}
+</p>
+
+<p className="text-xs text-slate-500">
+  {l.employee_code || `EMP${l.employee_id}`} · {l.role || "Employee"}
+</p>
                     </div>
                   </div>
                   <StatusBadge status={l.status ?? "Pending"} />
