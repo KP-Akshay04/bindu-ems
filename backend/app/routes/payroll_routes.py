@@ -100,35 +100,35 @@ def get_payroll():
 
         employee = Employee.query.get(
             payroll.employee_id
-    )
+        )
 
-    result.append({
-        "payroll_id": payroll.payroll_id,
+        result.append({
+            "payroll_id": payroll.payroll_id,
 
-        "employee_id": payroll.employee_id,
+            "employee_id": payroll.employee_id,
 
-        "employee_name":
-            employee.full_name if employee else None,
+            "employee_name":
+                employee.full_name if employee else None,
 
-        "employee_code":
-            employee.employee_code if employee else None,
+            "employee_code":
+                employee.employee_code if employee else None,
 
-        "role":
-            employee.role if employee else None,
+            "role":
+                employee.role if employee else None,
 
-        "basic_salary": payroll.basic_salary,
-        "allowances": payroll.allowances,
-        "deductions": payroll.deductions,
-        "net_salary": payroll.net_salary,
-        "month": payroll.month,
-        "year": payroll.year,
-        "status": payroll.status,
+            "basic_salary": payroll.basic_salary,
+            "allowances": payroll.allowances,
+            "deductions": payroll.deductions,
+            "net_salary": payroll.net_salary,
+            "month": payroll.month,
+            "year": payroll.year,
+            "status": payroll.status,
 
-        "paid_date":
-            str(payroll.paid_date)
-            if payroll.paid_date
-            else None
-    })
+            "paid_date":
+                str(payroll.paid_date)
+                if payroll.paid_date
+                else None
+        })
 
     return jsonify(result)
 

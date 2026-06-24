@@ -51,28 +51,28 @@ def get_all_leaves():
 
         employee = Employee.query.get(
         leave.employee_id
-    )
+        )
 
-    result.append({
-        "leave_id": leave.leave_id,
+        result.append({
+            "leave_id": leave.leave_id,
 
-        "employee_id": leave.employee_id,
+            "employee_id": leave.employee_id,
 
-        "employee_name":
+            "employee_name":
             employee.full_name if employee else None,
 
-        "employee_code":
+            "employee_code":
             employee.employee_code if employee else None,
 
-        "role":
+            "role":
             employee.role if employee else None,
 
-        "leave_type": leave.leave_type,
-        "start_date": str(leave.start_date),
-        "end_date": str(leave.end_date),
-        "reason": leave.reason,
-        "status": leave.status
-    })
+            "leave_type": leave.leave_type,
+            "start_date": str(leave.start_date),
+            "end_date": str(leave.end_date),
+            "reason": leave.reason,
+            "status": leave.status
+        })
 
     return jsonify(result)
 

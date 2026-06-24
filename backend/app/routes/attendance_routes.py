@@ -250,38 +250,38 @@ def get_attendance():
 
         employee = Employee.query.get(
             record.employee_id
-    )
+        )
 
-    result.append({
-        "attendance_id": record.attendance_id,
-        "employee_id": record.employee_id,
+        result.append({
+            "attendance_id": record.attendance_id,
+            "employee_id": record.employee_id,
 
-        "employee_name":
-            employee.full_name if employee else None,
+            "employee_name":
+                employee.full_name if employee else None,
 
-        "employee_code":
-            employee.employee_code if employee else None,
+            "employee_code":
+                employee.employee_code if employee else None,
 
-        "role":
-            employee.role if employee else None,
+            "role":
+                employee.role if employee else None,
 
-        "attendance_date": str(record.attendance_date),
-        "login_time": str(record.login_time) if record.login_time else None,
-        "logout_time": str(record.logout_time) if record.logout_time else None,
-        "working_hours": record.working_hours,
-        "lunch_minutes": record.lunch_minutes,
+            "attendance_date": str(record.attendance_date),
+            "login_time": str(record.login_time) if record.login_time else None,
+            "logout_time": str(record.logout_time) if record.logout_time else None,
+            "working_hours": record.working_hours,
+            "lunch_minutes": record.lunch_minutes,
 
-        "lunch_start_time":
+            "lunch_start_time":
             str(record.lunch_start_time)
             if record.lunch_start_time
             else None,
 
-        "lunch_end_time":
+            "lunch_end_time":
             str(record.lunch_end_time)
             if record.lunch_end_time
             else None,
 
-        "status": record.status
-    })
+            "status": record.status
+        })
 
     return jsonify(result)
