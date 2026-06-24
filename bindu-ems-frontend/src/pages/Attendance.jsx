@@ -176,7 +176,7 @@ export default function Attendance() {
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {visible.map((a, i) => {
-                  const name = a.employee_name || a.name || `Employee #${a.employee_id ?? "—"}`;
+                  const name = a.employee_name || `Employee #${a.employee_id ?? "—"}`;
                   return (
                     <tr key={a.id ?? i} className="hover:bg-brand-50/40">
                       <td className="px-5 py-3">
@@ -190,7 +190,7 @@ export default function Attendance() {
 </p>
 
 <p className="text-xs text-slate-500">
-  {a.employee_code || `EMP${a.employee_id}`} · {a.role || "Employee"}
+  {a.employee_code} · {a.role}
 </p>
                           </div>
                         </div>

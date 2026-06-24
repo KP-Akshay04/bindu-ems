@@ -96,23 +96,6 @@ export default function Sidebar({ collapsed = false, onToggle, onNavigate }) {
         )}
       </div>
 
-      {!collapsed && user && (
-  <div className="px-4 py-3 border-b border-brand-50">
-    <p className="font-semibold text-slate-800 truncate">
-      {user.full_name}
-    </p>
-
-    <p className="text-xs text-slate-500">
-      {user.employee_code}
-    </p>
-
-    <p className="text-xs text-brand-600 font-medium">
-      {user.role}
-    </p>
-  </div>
-)}
-
-
       <nav className="flex-1 px-3 py-5 space-y-1">
         {NAV.map(({ to, label, icon: Icon }) => (
           <NavLink
