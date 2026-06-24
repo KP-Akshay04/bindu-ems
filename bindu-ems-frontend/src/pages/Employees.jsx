@@ -49,7 +49,8 @@ export default function Employees() {
     return items.filter((e) => {
       const matchesQ =
         !q ||
-        String(e.name ?? "").toLowerCase().includes(q) ||
+        String(e.full_name ?? "").toLowerCase().includes(q) ||
+        String(e.employee_code ?? "").toLowerCase().includes(q) ||
         String(e.id ?? "").toLowerCase().includes(q) ||
         String(e.email ?? "").toLowerCase().includes(q) ||
         String(e.designation ?? "").toLowerCase().includes(q);
@@ -153,11 +154,11 @@ export default function Employees() {
                     <td className="px-5 py-3">
                       <div className="flex items-center gap-3">
                         <span className="inline-flex items-center justify-center w-9 h-9 rounded-full ring-2 ring-brand-100 bg-gradient-to-br from-brand-400 to-brand-600 text-white text-xs font-bold">
-                          {initials(e.name)}
+                          {initials(e.full_name)}
                         </span>
                         <div className="leading-tight">
-                          <p className="font-semibold text-slate-800">{e.name ?? "—"}</p>
-                          <p className="text-xs text-slate-500">{e.id ?? e.employee_id ?? "—"} · {e.email ?? ""}</p>
+                          <p className="font-semibold text-slate-800">{e.full_name ?? "—"} </p>
+                          <p className="text-xs text-slate-500">{e.employee_code ?? "—"} · {e.email ?? ""}</p>
                         </div>
                       </div>
                     </td>
