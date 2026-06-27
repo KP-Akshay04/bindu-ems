@@ -2,6 +2,7 @@ from flask import Blueprint, request, jsonify
 
 from app import db
 from app.models.shift import Shift
+from app.models.employee import Employee
 
 shift_bp = Blueprint(
     "shift_bp",
@@ -84,6 +85,13 @@ def update_shift(id):
 @shift_bp.route("/api/shifts/<int:id>", methods=["DELETE"])
 def delete_shift(id):
 
+    count = Employee.query.filter_by(shift_id=id).count()
+
+    if count > 0:
+        return jsonify({
+            "message": "Shift is assigned to employees."
+        }), 400
+
     shift = Shift.query.get_or_404(id)
 
     db.session.delete(shift)
@@ -91,4 +99,4 @@ def delete_shift(id):
 
     return jsonify({
         "message": "Shift deleted successfully"
-    }), 201
+    })
