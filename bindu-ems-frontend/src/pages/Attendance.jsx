@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { UserCheck, UserX, Clock, CalendarOff } from "lucide-react";
+import { UserCheck, UserX, Clock, CalendarOff, Search } from "lucide-react";
 import {
   ResponsiveContainer,
   AreaChart,
@@ -23,6 +23,7 @@ export default function Attendance() {
   const [error, setError] = useState(null);
   const [items, setItems] = useState([]);
   const [tab, setTab] = useState("today");
+  const [query, setQuery] = useState("");
 
   const load = async () => {
     setLoading(true);
@@ -93,7 +94,21 @@ export default function Attendance() {
     { label: "On Leave", value: counts.leave, icon: CalendarOff, accent: "from-brand-400 to-brand-600" },
   ];
 
-  const visible = tab === "today" ? todayList : items;
+  const visible = (tab === "today" ? todayList : items).filter((a) => {
+
+  const q = query.toLowerCase().trim();
+
+  if (!q) return true;
+
+  return (
+    String(a.employee_name ?? "").toLowerCase().includes(q) ||
+    String(a.employee_code ?? "").toLowerCase().includes(q) ||
+    String(a.employee_id ?? "").toLowerCase().includes(q) ||
+    String(a.department ?? "").toLowerCase().includes(q) ||
+    String(a.designation ?? "").toLowerCase().includes(q)
+  );
+
+});
 
   return (
     <div className="space-y-5">
@@ -113,6 +128,28 @@ export default function Attendance() {
           );
         })}
       </div>
+
+      <div className="glass-card p-4">
+
+  <div className="relative">
+
+    <Search
+      className="absolute left-3 top-1/2 -translate-y-1/2
+                 w-4 h-4 text-slate-400"
+    />
+
+    <input
+      type="text"
+      value={query}
+      onChange={(e) => setQuery(e.target.value)}
+      placeholder="Search employee by ID, Code, Name, Department or Designation..."
+      autoComplete="off"
+      className="input h-11 pl-10"
+    />
+
+  </div>
+
+</div>
 
       <div className="flex gap-1 p-1 bg-white/70 backdrop-blur-md border border-brand-100 rounded-xl w-fit">
         {[
@@ -190,7 +227,24 @@ export default function Attendance() {
 </p>
 
 <p className="text-xs text-slate-500">
-  {a.employee_code || `EMP${a.employee_id}`} · {a.role || "Employee"}
+
+  ID :
+  {a.employee_id}
+
+  {" • "}
+
+  {a.employee_code}
+
+  {" • "}
+
+  {a.department ?? "Department"}
+
+</p>
+
+<p className="text-xs text-slate-400">
+
+  {a.designation ?? "Employee"}
+
 </p>
                           </div>
                         </div>
@@ -201,7 +255,7 @@ export default function Attendance() {
                       <td className="px-5 py-3 font-mono text-emerald-600">{a.lunch_end_time? formatTime(a.lunch_end_time): "—"}</td>
                       <td className="px-5 py-3 font-mono text-slate-700">{formatTime(a.check_out ?? a.logout_time)}</td>
                       <td className="px-5 py-3 font-mono text-slate-700">{a.lunch_minutes ?? 0}</td>
-                      <td className="px-5 py-3 font-mono text-slate-700">{a.working_hours ?? a.hours ?? a.total_hours ?? "—"}</td>
+                      <td className="px-5 py-3 font-mono text-slate-700">{a.working_hours ? `${a.working_hours} hrs` : "—"}</td>
                       <td className="px-5 py-3"><StatusBadge status={a.status ?? "—"} /></td>
                     </tr>
                   );
