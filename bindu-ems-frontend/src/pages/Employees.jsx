@@ -8,6 +8,7 @@ import EmployeeFormDialog from "../components/EmployeeFormDialog";
 import ConfirmDialog from "../components/ConfirmDialog";
 import { fetchEmployees, createEmployee, updateEmployee, deactivateEmployee } from "../services/api";
 import { extractList, formatDate, initials } from "../utils/format";
+import EmployeeProfileDialog from "../components/EmployeeProfileDialog";
 
 export default function Employees() {
   const [loading, setLoading] = useState(true);
@@ -21,6 +22,7 @@ export default function Employees() {
 
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState(null);
+  const [viewing, setViewing] = useState(null);
 
   const [confirm, setConfirm] = useState({ open: false, target: null });
 
@@ -51,8 +53,9 @@ export default function Employees() {
         !q ||
         String(e.full_name ?? "").toLowerCase().includes(q) ||
         String(e.employee_code ?? "").toLowerCase().includes(q) ||
-        String(e.id ?? "").toLowerCase().includes(q) ||
+        String(e.employee_id ?? "").toLowerCase().includes(q) ||
         String(e.email ?? "").toLowerCase().includes(q) ||
+        String(e.department ?? "").toLowerCase().includes(q)
         String(e.designation ?? "").toLowerCase().includes(q);
       const matchesD = dept === "all" || e.department === dept;
       const matchesS = status === "all" || String(e.status).toLowerCase() === status.toLowerCase();
@@ -62,6 +65,7 @@ export default function Employees() {
 
   const openAdd = () => { setEditing(null); setFormOpen(true); };
   const openEdit = (emp) => { setEditing(emp); setFormOpen(true); };
+  const openView = (emp) => { setViewing(emp);};
 
   const submitForm = async (payload) => {
     setSaving(true);
@@ -158,17 +162,21 @@ export default function Employees() {
                         </span>
                         <div className="leading-tight">
                           <p className="font-semibold text-slate-800">{e.full_name ?? "—"} </p>
-                          <p className="text-xs text-slate-500">{e.employee_code ?? "—"} · {e.email ?? ""}</p>
+                          <p className="text-xs text-slate-500"> ID : {e.employee_id} • {e.employee_code} • {e.email}</p>
                         </div>
                       </div>
                     </td>
-                    <td className="px-5 py-3 text-slate-700">{e.department ?? "—"}</td>
+                    <td className="px-5 py-3">
+                    <div><p className="font-medium text-slate-700">{e.department ?? "—"}</p>
+                      <p className="text-xs text-slate-500">Joined {formatDate(e.joined_date ?? e.joined ?? e.created_at)}</p>
+                      </div>
+                    </td>
                     <td className="px-5 py-3 text-slate-700">{e.designation ?? "—"}</td>
                     <td className="px-5 py-3 text-slate-600">{formatDate(e.joined_date ?? e.joined ?? e.created_at)}</td>
                     <td className="px-5 py-3"><StatusBadge status={e.status ?? "Active"} /></td>
                     <td className="px-5 py-3">
                       <div className="flex items-center justify-end gap-1">
-                        <button onClick={() => openEdit(e)} className="btn-ghost text-brand-600" title="View / Edit">
+                        <button onClick={() => openView(e)}className="btn-ghost text-brand-600" title="View">
                           <Eye className="w-4 h-4" />
                         </button>
                         <button onClick={() => openEdit(e)} className="btn-ghost text-amber-600" title="Edit">
@@ -198,12 +206,19 @@ export default function Employees() {
         initial={editing}
         loading={saving}
       />
+
+      <EmployeeProfileDialog
+        open={Boolean(viewing)}
+        employee={viewing}
+        onClose={() => setViewing(null)}
+      />
+      
       <ConfirmDialog
         open={confirm.open}
         onClose={() => setConfirm({ open: false, target: null })}
         onConfirm={doDeactivate}
         title="Deactivate employee?"
-        message={`This will deactivate ${confirm.target?.name ?? "the employee"}. They can be re-activated later from the backend.`}
+        message={`This will deactivate ${confirm.target?.full_name ?? "the employee"}. They can be re-activated later from the backend.`}
         confirmLabel="Deactivate"
         danger
         loading={saving}
