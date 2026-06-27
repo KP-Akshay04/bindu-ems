@@ -87,13 +87,14 @@ def delete_shift(id):
 
     employees = Employee.query.filter_by(shift_id=id).all()
 
-    print("========== DELETE DEBUG ==========")
-    print("Shift ID:", id)
-    print("Employee count:", len(employees))
-
-    for e in employees:
-        print(e.employee_id, e.employee_code, e.shift_id)
-
     return jsonify({
-        "count": len(employees)
+        "count": len(employees),
+        "employees": [
+            {
+                "employee_id": e.employee_id,
+                "employee_code": e.employee_code,
+                "shift_id": e.shift_id
+            }
+            for e in employees
+        ]
     })
