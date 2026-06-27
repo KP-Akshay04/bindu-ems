@@ -15,7 +15,7 @@ const EMPTY = {
 
 export default function EmployeeFormDialog({ open, onClose, onSubmit, initial, loading }) {
   const [form, setForm] = useState(EMPTY);
-  const isEdit = Boolean(initial?.id);
+  const isEdit = Boolean(initial?.employee_id);
 
   const [shifts, setShifts] = useState([]);
 
@@ -50,9 +50,15 @@ useEffect(() => {
   const update = (k) => (e) => setForm({ ...form, [k]: e.target.value });
 
   const submit = (e) => {
-    e.preventDefault();
-    onSubmit?.(form);
-  };
+  e.preventDefault();
+
+  onSubmit?.({
+    ...form,
+    shift_id: form.shift_id
+      ? Number(form.shift_id)
+      : null,
+  });
+};
 
   return (
     <Modal
