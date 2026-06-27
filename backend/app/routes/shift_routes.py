@@ -3,6 +3,7 @@ from flask import Blueprint, request, jsonify
 from app import db
 from app.models.shift import Shift
 from app.models.employee import Employee
+from sqlalchemy import text
 
 shift_bp = Blueprint(
     "shift_bp",
@@ -82,19 +83,22 @@ def update_shift(id):
     })
 
 
-@shift_bp.route("/api/shifts/<int:id>", methods=["DELETE"])
-def delete_shift(id):
+from sqlalchemy import text
 
-    employees = Employee.query.filter_by(shift_id=id).all()
+@shift_bp.route("/api/debug-db")
+def debug_db():
 
-    return jsonify({
-        "count": len(employees),
-        "employees": [
-            {
-                "employee_id": e.employee_id,
-                "employee_code": e.employee_code,
-                "shift_id": e.shift_id
-            }
-            for e in employees
-        ]
-    })
+    rows = db.session.execute(text("""
+        SELECT employee_id, employee_code, shift_id
+        FROM employees
+        ORDER BY employee_id
+    """)).fetchall()
+
+    return jsonify([
+        {
+            "employee_id": r.employee_id,
+            "employee_code": r.employee_code,
+            "shift_id": r.shift_id,
+        }
+        for r in rows
+    ])
