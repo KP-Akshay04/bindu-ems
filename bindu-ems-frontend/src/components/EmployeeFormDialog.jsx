@@ -8,7 +8,9 @@ const EMPTY = {
   email: "",
   password: "",
   phone: "",
+  department: "",
   designation: "",
+  status: "Active",
   role: "Employee",
   shift_id: "",
 };
@@ -43,6 +45,8 @@ useEffect(() => {
         designation: initial?.designation ?? "",
         role: initial?.role ?? "Employee",
         shift_id: initial?.shift_id ?? "",
+        department: initial?.department ?? "",
+        status: initial?.status ?? "Active",
       });
     }
   }, [open, initial]);
@@ -68,7 +72,7 @@ useEffect(() => {
       description={isEdit ? "Update employee details." : "Create a new employee record."}
       size="lg"
     >
-      <form onSubmit={submit} className="space-y-4">
+      <form onSubmit={submit} className="space-y-4 max-h-[70vh] overflow-y-auto pr-2">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label className="label">Full Name</label>
@@ -98,14 +102,6 @@ useEffect(() => {
               <option>Inactive</option>
             </select>
           </div>
-        </div>
-        <div className="flex items-center justify-end gap-2 pt-2">
-          <button type="button" onClick={onClose} className="btn-secondary" disabled={loading}>
-            Cancel
-          </button>
-          <button type="submit" className="btn-primary" disabled={loading}>
-            {loading ? "Saving..." : isEdit ? "Save Changes" : "Create Employee"}
-          </button>
         </div>
 
         <div>
@@ -159,11 +155,20 @@ useEffect(() => {
     value={form.role}
     onChange={update("role")}
   >
+    <option>HR</option>
     <option>Employee</option>
-    <option>HR Admin</option>
     <option>Super Admin</option>
   </select>
 </div>
+
+<div className="flex items-center justify-end gap-2 pt-2">
+          <button type="button" onClick={onClose} className="btn-secondary" disabled={loading}>
+            Cancel
+          </button>
+          <button type="submit" className="btn-primary" disabled={loading}>
+            {loading ? "Saving..." : isEdit ? "Update Employee" : "Create Employee"}
+          </button>
+        </div>
 
       </form>
     </Modal>
