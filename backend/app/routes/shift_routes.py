@@ -5,6 +5,7 @@ from app.models.shift import Shift
 from app.models.employee import Employee
 from sqlalchemy import text
 
+
 shift_bp = Blueprint(
     "shift_bp",
     __name__
@@ -83,22 +84,23 @@ def update_shift(id):
     })
 
 
-from sqlalchemy import text
 
-@shift_bp.route("/api/debug-db")
-def debug_db():
 
-    rows = db.session.execute(text("""
-        SELECT employee_id, employee_code, shift_id
-        FROM employees
-        ORDER BY employee_id
-    """)).fetchall()
+@shift_bp.route("/api/shifts/<int:id>", methods=["DELETE"])
+def delete_shift(id):
 
-    return jsonify([
-        {
-            "employee_id": r.employee_id,
-            "employee_code": r.employee_code,
-            "shift_id": r.shift_id,
-        }
-        for r in rows
-    ])
+    count = Employee.query.filter_by(shift_id=id).count()
+
+    if count > 0:
+        return jsonify({
+            "message": "Shift is assigned to employees."
+        }), 400
+
+    shift = Shift.query.get_or_404(id)
+
+    db.session.delete(shift)
+    db.session.commit()
+
+    return jsonify({
+        "message": "Shift deleted successfully"
+    })
