@@ -39,33 +39,38 @@ def login():
 
     employee_role = str(employee.role).lower()
 
-    allowed = {
-        "admin": [
-            "super admin",
-            "super_admin",
-            "admin"
-        ],
-        "hr": [
-            "hr",
-            "hr admin",
-            "hr_admin"
-        ],
-        "employee": [
-            "employee"
-        ]
-    }
+    # Super Admin can access every portal
+    if employee_role in [
+        "super admin",
+        "super_admin",
+        "admin"
+    ]:
+        pass
 
-    if portal not in allowed:
+    elif portal == "hr" and employee_role not in [
+        "hr",
+        "hr admin",
+        "hr_admin"
+    ]:
         return jsonify({
-            "success": False,
-            "message": "Invalid login portal."
-        }), 400
 
-    if employee_role not in allowed[portal]:
-        return jsonify({
             "success": False,
-            "message": f"You are not authorized to log in through the {portal.title()} portal."
-        }), 403
+            "message": "Only HR can log in through the HR portal."
+    }), 403
+
+    elif portal == "employee" and employee_role != "employee":
+        return jsonify({
+
+        "success": False,
+        "message": "Only Employees can log in through the Employee portal."
+    }), 403
+
+    elif portal not in ["admin", "hr", "employee"]:
+        return jsonify({
+            
+        "success": False,
+        "message": "Invalid login portal."
+    }), 400
 
     return jsonify({
         "success": True,
