@@ -70,8 +70,6 @@ export default function Dashboard() {
 
   // ---- DATA LOAD ----
   const load = async () => {
-    console.log("DASHBOARD LOAD RUNNING");
-    
     setLoading(true);
     setError(null);
     try {
@@ -98,26 +96,7 @@ export default function Dashboard() {
       const today = new Date()
   .toISOString()
   .slice(0, 10);
-
-  console.log("CURRENT USER =", user);
-  console.log("USER EMPLOYEE ID =", user?.employee_id);
-  console.log("TODAY =", today);
-
-  console.log("TODAY =", today);
-console.log(
-  "DATES FROM API =",
-  attendanceList.map((a) => a.attendance_date)
-);
-
-
-console.log(
-  "ATTENDANCE LIST =",
-  attendanceList.filter(
-    (a) => String(a.employee_id) === String(user?.employee_id)
-  )
-);
-      console.log("CURRENT USER =", user);
-      console.log("USER EMPLOYEE ID =", user?.employee_id);
+      
 
       const record = attendanceList.find(
         (a) =>
@@ -126,12 +105,9 @@ console.log(
       );
 
       if (record) {
-  console.log("FULL RECORD =", record);
-  console.log("STATUS FROM API =", record.status);
 
   setTodayAttendance(record);
 
-  console.log("TODAY ATTENDANCE =", record);
 
   const status = String(record.status || "").trim().toLowerCase();
 
@@ -294,13 +270,6 @@ const present = attendance.filter((a) => {
   const dateMatch =
     String(a.attendance_date).slice(0, 10) === today;
 
-    console.log(
-  "PRESENT TODAY",
-  attendance.filter(
-    (a) =>
-      String(a.attendance_date).slice(0, 10) === today
-  )
-);
 
   const s = String(a.status ?? "").toLowerCase();
 
@@ -330,13 +299,6 @@ const onLeave = leaves.filter((l) => {
   return status && today >= start && today <= end;
 }).length;
 
-console.log("LEAVES =", leaves);
-
-console.log(
-  "ACTIVE LEAVES",
-  leaves.filter((l) => {
-    const status =
-      String(l.status ?? "").toLowerCase() === "approved";
 
     const start =
       String(l.start_date).slice(0, 10);
@@ -346,15 +308,12 @@ console.log(
 
     return status && today >= start && today <= end;
   })
-);
+
 
     const monthlyPayroll = payroll.reduce(
   (sum, p) => sum + Number(p.net_salary ?? 0),
   0
 );
-    console.log("ALL ATTENDANCE =", attendance);
-    return { total, present, onLeave, monthlyPayroll };
-  }, [employees, attendance, leaves, payroll]);
 
   const attendanceTrend = useMemo(() => {
     const buckets = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((d) => ({
@@ -452,21 +411,6 @@ console.log(
 
   return (
     <div className="space-y-6">
-      {/* Role chip */}
-      <div className="flex items-center gap-2">
-        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-brand-100 text-brand-700">
-          {role}
-        </span>
-        <div className="flex flex-col">
-  <span className="font-semibold text-slate-800">
-    {user?.full_name}
-  </span>
-
-  <span className="text-sm text-slate-500">
-    {user?.employee_code} · {user?.role}
-  </span>
-</div>
-      </div>
 
       {/* Employee work status / timers */}
     

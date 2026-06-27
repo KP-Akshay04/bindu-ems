@@ -6,6 +6,7 @@ from app.models.employee import Employee
 from app.utils.security import hash_password
 from app.utils.security import (hash_password,verify_password)
 from flask import send_from_directory
+from app.models.shift import Shift
 
 employee_bp = Blueprint(
     "employee_bp",
@@ -54,6 +55,11 @@ def get_employees():
 
     for emp in employees:
 
+        shift = None
+
+        if emp.shift_id:
+            shift = Shift.query.get(emp.shift_id)
+
         result.append({
             "employee_id": emp.employee_id,
             "employee_code": emp.employee_code,
@@ -61,9 +67,16 @@ def get_employees():
             "full_name": emp.full_name,
             "email": emp.email,
             "phone": emp.phone,
+
             "branch_id": emp.branch_id,
             "department_id": emp.department_id,
+
             "shift_id": emp.shift_id,
+            "shift_name": shift.shift_name if shift else None,
+            "shift_start": str(shift.start_time) if shift else None,
+            "shift_end": str(shift.end_time) if shift else None,
+            "grace_minutes": shift.grace_minutes if shift else None,
+
             "designation": emp.designation,
             "role": emp.role,
             "basic_salary": emp.basic_salary,

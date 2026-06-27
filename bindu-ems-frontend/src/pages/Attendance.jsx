@@ -186,11 +186,11 @@ export default function Attendance() {
                           </span>
                           <div className="leading-tight">
                             <p className="font-semibold text-slate-800">
-  {a.employee_name || a.full_name || name}
+  {a.employee_name || name}
 </p>
 
 <p className="text-xs text-slate-500">
-  {a.employee_code} · {a.role}
+  {a.employee_code || `EMP${a.employee_id}`} · {a.role || "Employee"}
 </p>
                           </div>
                         </div>
