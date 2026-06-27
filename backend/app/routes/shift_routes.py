@@ -85,18 +85,15 @@ def update_shift(id):
 @shift_bp.route("/api/shifts/<int:id>", methods=["DELETE"])
 def delete_shift(id):
 
-    count = Employee.query.filter_by(shift_id=id).count()
+    employees = Employee.query.filter_by(shift_id=id).all()
 
-    if count > 0:
-        return jsonify({
-            "message": "Shift is assigned to employees."
-        }), 400
+    print("========== DELETE DEBUG ==========")
+    print("Shift ID:", id)
+    print("Employee count:", len(employees))
 
-    shift = Shift.query.get_or_404(id)
-
-    db.session.delete(shift)
-    db.session.commit()
+    for e in employees:
+        print(e.employee_id, e.employee_code, e.shift_id)
 
     return jsonify({
-        "message": "Shift deleted successfully"
+        "count": len(employees)
     })
