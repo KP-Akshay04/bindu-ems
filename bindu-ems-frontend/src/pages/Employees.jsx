@@ -66,8 +66,8 @@ export default function Employees() {
   const submitForm = async (payload) => {
     setSaving(true);
     try {
-      if (editing?.id) {
-        await updateEmployee(editing.id, payload);
+      if (editing?.employee_id) {
+          await updateEmployee(editing.employee_id, payload);
       } else {
         await createEmployee(payload);
       }
@@ -82,10 +82,10 @@ export default function Employees() {
   };
 
   const doDeactivate = async () => {
-    if (!confirm.target?.id) return;
+    if (!confirm.target?.employee_id) return;
     setSaving(true);
     try {
-      await deactivateEmployee(confirm.target.id);
+      await deactivateEmployee(confirm.target.employee_id);
       setConfirm({ open: false, target: null });
       await load();
     } catch (err) {

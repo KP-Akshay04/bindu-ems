@@ -273,47 +273,42 @@ const present = attendance.filter((a) => {
 
   const s = String(a.status ?? "").toLowerCase();
 
-return (
-  dateMatch &&
-  (
-    s === "present" ||
-    s === "checked-in" ||
-    s === "late" ||
-    s === "working" ||
-    s === "lunch break" ||
-    s === "logged out"
-  )
-);
+  return (
+    dateMatch &&
+    (
+      s === "present" ||
+      s === "checked-in" ||
+      s === "late" ||
+      s === "working" ||
+      s === "lunch break" ||
+      s === "logged out"
+    )
+  );
 }).length;
 
-const onLeave = leaves.filter((l) => {
+    const onLeave = leaves.filter((l) => {
   const status =
     String(l.status ?? "").toLowerCase() === "approved";
 
-  const start =
-    String(l.start_date).slice(0, 10);
-
-  const end =
-    String(l.end_date).slice(0, 10);
+  const start = String(l.start_date).slice(0, 10);
+  const end = String(l.end_date).slice(0, 10);
 
   return status && today >= start && today <= end;
 }).length;
-
-
-    const start =
-      String(l.start_date).slice(0, 10);
-
-    const end =
-      String(l.end_date).slice(0, 10);
-
-    return status && today >= start && today <= end;
-  })
 
 
     const monthlyPayroll = payroll.reduce(
   (sum, p) => sum + Number(p.net_salary ?? 0),
   0
 );
+
+return {
+  total,
+  present,
+  onLeave,
+  monthlyPayroll,
+};
+}, [employees, attendance, leaves, payroll]);
 
   const attendanceTrend = useMemo(() => {
     const buckets = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((d) => ({
@@ -664,4 +659,4 @@ const onLeave = leaves.filter((l) => {
       </div>
     </div>
   );
-}
+} 
