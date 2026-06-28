@@ -16,6 +16,7 @@ import StatusBadge from "../components/StatusBadge";
 import { fetchPayroll, markPayrollPaid, fetchEmployees, createPayroll, } from "../services/api";
 import { extractList, formatINR, formatDate, initials } from "../utils/format";
 import { useAuth } from "../context/AuthContext";
+import PayslipDialog from "../components/PayslipDialog";
 
 
 export default function Payroll() {
@@ -38,6 +39,8 @@ export default function Payroll() {
   const [items, setItems] = useState([]);
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState("all");
+  const [selectedPayroll, setSelectedPayroll] = useState(null);
+  const [showPayslip, setShowPayslip] = useState(false);
 
   const load = async () => {
   setLoading(true);
@@ -589,20 +592,28 @@ const handleCreatePayroll =
       )}
 
       <button
-        className="px-3 py-1 rounded-lg border border-brand-200 text-brand-600 text-xs font-semibold hover:bg-brand-50"
-      >
-        Payslip
-      </button>
+  onClick={() => {
+    setSelectedPayroll(p);
+    setShowPayslip(true);
+  }}
+  className="px-3 py-1 rounded-lg border border-brand-200 text-brand-600 text-xs font-semibold hover:bg-brand-50"
+>
+  Payslip
+</button>
 
     </div>
 
   ) : (
 
     <button
-      className="px-3 py-1 rounded-lg border border-brand-200 text-brand-600 text-xs font-semibold hover:bg-brand-50"
-    >
-      Payslip
-    </button>
+  onClick={() => {
+    setSelectedPayroll(p);
+    setShowPayslip(true);
+  }}
+  className="px-3 py-1 rounded-lg border border-brand-200 text-brand-600 text-xs font-semibold hover:bg-brand-50"
+>
+  Payslip
+</button>
 
   )}
 
@@ -632,6 +643,16 @@ const handleCreatePayroll =
 </div>
 </div>
 )}
+
+<PayslipDialog
+  open={showPayslip}
+  payroll={selectedPayroll}
+  onClose={() => {
+    setShowPayslip(false);
+    setSelectedPayroll(null);
+  }}
+/>
+
 </div>
 );
 }
