@@ -16,7 +16,9 @@ export default function Leaves() {
   const [items, setItems] = useState([]);
   const [query, setQuery] = useState("");
   const [tab, setTab] = useState("all");
+  const [selectedLeave, setSelectedLeave] = useState(null);
 
+  const openLeave = (leave) => { setSelectedLeave(leave);};
   const [open, setOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({
@@ -52,9 +54,12 @@ export default function Leaves() {
     return items.filter((l) => {
       const matchQ =
         !q ||
-        String(l.employee_name ?? l.name ?? "").toLowerCase().includes(q) ||
+        String(l.employee_name ?? l.full_name ?? "").toLowerCase().includes(q) ||
+        String(l.employee_code ?? "").toLowerCase().includes(q) ||
         String(l.employee_id ?? "").toLowerCase().includes(q) ||
-        String(l.leave_type ?? l.type ?? "").toLowerCase().includes(q);
+        String(l.department ?? "").toLowerCase().includes(q) ||
+        String(l.designation ?? "").toLowerCase().includes(q) ||
+        String(l.leave_type ?? "").toLowerCase().includes(q);
       const matchTab = tab === "all" || String(l.status).toLowerCase() === tab;
       return matchQ && matchTab;
     });
@@ -183,13 +188,10 @@ const handleReject = async (leaveId) => {
                       {initials(name)}
                     </span>
                     <div className="leading-tight">
-                      <p className="font-semibold text-slate-800">
-  {l.employee_name || l.full_name || name}
-</p>
+                      <p className="font-semibold text-slate-800"> {l.employee_name || l.full_name || name} </p>
 
-<p className="text-xs text-slate-500">
-  {l.employee_code || `EMP${l.employee_id}`} · {l.role || "Employee"}
-</p>
+                      <p className="text-xs text-slate-500"> ID : {l.employee_id} {" • "} {l.employee_code} {" • "} {l.department ?? "Department"}</p>
+                      <p className="text-xs text-slate-400"> {l.designation ?? l.role ?? "Employee"}</p>
                     </div>
                   </div>
                   <StatusBadge status={l.status ?? "Pending"} />
@@ -202,7 +204,7 @@ const handleReject = async (leaveId) => {
                   </div>
                   <div>
                     <p className="text-xs text-slate-400 uppercase tracking-wider font-semibold">Duration</p>
-                    <p className="font-semibold text-slate-700">{l.days ?? "—"} day(s)</p>
+                    <p className="font-semibold text-slate-700">{l.days ? `${l.days} Day${l.days > 1 ? "s" : ""}`: "—"}</p>
                   </div>
                   <div>
                     <p className="text-xs text-slate-400 uppercase tracking-wider font-semibold">From</p>
@@ -223,6 +225,14 @@ const handleReject = async (leaveId) => {
                 {user?.role !== "Employee" &&
  String(l.status).toLowerCase() === "pending" && (
   <div className="flex gap-2 mt-4">
+
+    <button
+  onClick={() => openLeave(l)}
+  className="px-3 py-2 rounded-lg border border-brand-200 text-brand-600 hover:bg-brand-50 text-sm font-semibold"
+>
+  View
+</button>
+
     <button
       onClick={() =>
         handleApprove(
