@@ -161,8 +161,11 @@ useEffect(() => {
       (p) =>
         (!q ||
           String(p.employee_name ?? p.name ?? "").toLowerCase().includes(q) ||
-          String(p.employee_id ?? p.id ?? "").toLowerCase().includes(q) ||
-          String(p.department ?? "").toLowerCase().includes(q)) &&
+          String(p.employee_code ?? "").toLowerCase().includes(q) ||
+          String(p.employee_id ?? "").toLowerCase().includes(q) ||
+          String(p.department ?? "").toLowerCase().includes(q) ||
+          String(p.designation ?? "").toLowerCase().includes(q) ||
+          String(p.pay_date ?? "").toLowerCase().includes(q)) &&
         (status === "all" || String(p.status).toLowerCase() === status.toLowerCase())
     );
   }, [enriched, query, status]);
@@ -491,15 +494,36 @@ const handleCreatePayroll =
 </p>
 
 <p className="text-xs text-slate-500">
-  {p.employee_code || `EMP${p.employee_id}`} · {p.role || "Employee"}
+  ID : {p.employee_id}
+  {" • "}
+  {p.employee_code}
+  {" • "}
+  {p.department ?? "Department"}
 </p>
+
+<p className="text-xs text-slate-400">
+  {p.designation ?? p.role ?? "Employee"}
+</p>
+
             </div>
           </div>
         </td>
 
-        <td className="px-5 py-3 text-slate-700">
-          {p.department ?? "—"}
-        </td>
+        <td className="px-5 py-3">
+
+  <div>
+
+    <p className="font-medium text-slate-700">
+      {p.department ?? "—"}
+    </p>
+
+    <p className="text-xs text-slate-500">
+      {p.designation ?? "Employee"}
+    </p>
+
+  </div>
+
+</td>
 
         <td className="px-5 py-3 font-mono text-right text-slate-700">
           {formatINR(p._basic)}
@@ -525,39 +549,86 @@ const handleCreatePayroll =
           <StatusBadge status={p.status ?? "—"} />
         </td>
 
-        <td className="px-5 py-3 text-slate-600">
-          {formatDate(p.pay_date ?? p.created_at)}
-        </td>
+        <td className="px-5 py-3">
+
+  <p className="font-medium">
+    {formatDate(p.pay_date ?? p.created_at)}
+  </p>
+
+  <p className="text-xs text-slate-500">
+    Payroll Date
+  </p>
+
+</td>
 
         <td className="px-5 py-3">
-          {user?.role !== "Employee" ? (
-            String(p.status).toLowerCase() !== "paid" ? (
-              <button
-                onClick={() =>
-                  handleMarkPaid(
-                    p.payroll_id
-                  )
-                }
-                className="px-3 py-1 rounded-lg bg-emerald-600 text-white text-xs font-semibold hover:bg-emerald-700"
-              >
-                Mark Paid
-              </button>
-            ) : (
-              <span className="text-emerald-600 font-semibold">
-                Paid ✓
-              </span>
+
+  {user?.role !== "Employee" ? (
+
+    <div className="flex items-center gap-2">
+
+      {String(p.status).toLowerCase() !== "paid" ? (
+
+        <button
+          onClick={() =>
+            handleMarkPaid(
+              p.payroll_id
             )
-          ) : (
-            <span className="text-slate-500">
-              —
-            </span>
-          )}
-        </td>
+          }
+          className="px-3 py-1 rounded-lg bg-emerald-600 text-white text-xs font-semibold hover:bg-emerald-700"
+        >
+          Mark Paid
+        </button>
+
+      ) : (
+
+        <span className="text-emerald-600 font-semibold">
+          Paid ✓
+        </span>
+
+      )}
+
+      <button
+        className="px-3 py-1 rounded-lg border border-brand-200 text-brand-600 text-xs font-semibold hover:bg-brand-50"
+      >
+        Payslip
+      </button>
+
+    </div>
+
+  ) : (
+
+    <button
+      className="px-3 py-1 rounded-lg border border-brand-200 text-brand-600 text-xs font-semibold hover:bg-brand-50"
+    >
+      Payslip
+    </button>
+
+  )}
+
+</td>
       </tr>
     );
   })}
 </tbody>
 </table>
+
+<div className="flex items-center justify-between px-5 py-4 border-t border-slate-100 text-sm text-slate-500">
+
+  <span>
+
+    Showing {filtered.length} payroll record(s)
+
+  </span>
+
+  <span>
+
+    Total Payrolls : {items.length}
+
+  </span>
+
+</div>
+
 </div>
 </div>
 )}
