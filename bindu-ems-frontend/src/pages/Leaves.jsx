@@ -8,6 +8,7 @@ import Modal from "../components/Modal";
 import { fetchLeaves, createLeave, approveLeave, rejectLeave, } from "../services/api";
 import { extractList, formatDate, initials } from "../utils/format";
 import { useAuth } from "../context/AuthContext";
+import LeaveDetailsDialog from "../components/LeaveDetailsDialog";
 
 export default function Leaves() {
   const { user } = useAuth();
@@ -18,7 +19,6 @@ export default function Leaves() {
   const [tab, setTab] = useState("all");
   const [selectedLeave, setSelectedLeave] = useState(null);
 
-  const openLeave = (leave) => { setSelectedLeave(leave);};
   const [open, setOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({
@@ -109,6 +109,9 @@ const handleReject = async (leaveId) => {
 
   if (loading) return <LoadingSpinner label="Loading leaves..." />;
   if (error) return <ErrorState message={error} onRetry={load} />;
+
+  const openLeave = (leave) => { setSelectedLeave(leave);};
+  const closeLeave = () => { setSelectedLeave(null);};
 
   const STATS = [
     { label: "Approved", value: counts.approved, icon: CalendarCheck, accent: "from-emerald-400 to-teal-600" },
@@ -300,6 +303,19 @@ const handleReject = async (leaveId) => {
           </div>
         </form>
       </Modal>
+
+      <LeaveDetailsDialog
+  open={Boolean(selectedLeave)}
+  leave={selectedLeave}
+  onClose={closeLeave}
+  canManage={
+    user?.role === "Super Admin" ||
+    user?.role === "HR"
+  }
+  onApprove={handleApprove}
+  onReject={handleReject}
+/>
+
     </div>
   );
 }
