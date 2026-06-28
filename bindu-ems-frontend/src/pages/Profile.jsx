@@ -41,64 +41,134 @@ export default function Profile() {
       .toUpperCase() || "U";
 
   return (
-    <div className="space-y-6">
-      <div className="glass-card p-8 text-center">
-        <div className="w-28 h-28 mx-auto">
-  {user?.employee_photo ? (
-    <img
-      src={`${window.location.origin}/${user.employee_photo.replace(/\\/g, "/")}`}
-      alt="Profile"
-      className="w-28 h-28 rounded-full object-cover border-4 border-white shadow-lg"
-    />
-  ) : (
-    <div className="w-28 h-28 rounded-full bg-gradient-to-br from-brand-400 to-brand-600 text-white flex items-center justify-center text-3xl font-bold">
-      {initials}
-    </div>
-  )}
-</div>
+  <div className="space-y-6">
 
-        <h2 className="mt-4 text-2xl font-bold text-slate-800">
-          {user?.full_name || "Unknown User"}
-        </h2>
-        <p className="text-brand-600 font-semibold">{user?.role || "Employee"}</p>
+    <div className="glass-card p-8 text-center">
 
-        <div className="mt-5 flex flex-col items-center gap-3">
-          <input
-            type="file"
-            accept="image/*"
-            onChange={(e) => setPhoto(e.target.files[0])}
+      <div className="w-28 h-28 mx-auto">
+
+        {user?.employee_photo ? (
+
+          <img
+            src={`${window.location.origin}/${user.employee_photo.replace(/\\/g, "/")}`}
+            alt="Profile"
+            className="w-28 h-28 rounded-full object-cover border-4 border-white shadow-lg"
           />
-          <button
-            onClick={handleUpload}
-            disabled={uploading}
-            className="btn-primary"
-          >
-            {uploading ? "Uploading..." : "Upload Photo"}
-          </button>
-        </div>
+
+        ) : (
+
+          <div className="w-28 h-28 rounded-full bg-gradient-to-br from-brand-400 to-brand-600 text-white flex items-center justify-center text-3xl font-bold">
+
+            {initials}
+
+          </div>
+
+        )}
+
       </div>
 
+      <h2 className="mt-4 text-2xl font-bold text-slate-800">
+        {user?.full_name || "Unknown User"}
+      </h2>
 
-      <div className="glass-card p-6">
-        <h3 className="text-lg font-bold text-slate-800 mb-4">
-          Employee Information
-        </h3>
-        <div className="grid md:grid-cols-2 gap-4">
-          <Info label="Full Name" value={user?.full_name}/>
-          <Info label="Shift" value={user?.shift_name}/>
-          <Info label="Branch" value={user?.branch_name}  />
-          <Info label="Employee Code" value={user?.employee_code} />
-          <Info label="Email" value={user?.email} />
-          <Info label="Phone" value={user?.phone} />
-          <Info label="Role" value={user?.role} />
-          <Info label="Designation" value={user?.designation} />
-          <Info label="Department" value={user?.department} />
-          <Info label="Status" value={user?.status} />
-        </div>
+      <p className="text-brand-600 font-semibold">
+        {user?.role || "Employee"}
+      </p>
+
+      <div className="mt-5 flex flex-col items-center gap-3">
+
+        <input
+          type="file"
+          accept="image/*"
+          onChange={(e) => setPhoto(e.target.files[0])}
+        />
+
+        <button
+          onClick={handleUpload}
+          disabled={uploading}
+          className="btn-primary"
+        >
+          {uploading ? "Uploading..." : "Upload Photo"}
+        </button>
+
       </div>
+
     </div>
-  );
-}
+
+    <div className="glass-card p-6">
+
+      <h3 className="text-lg font-bold text-slate-800 mb-4">
+
+        Employee Information
+
+      </h3>
+
+      <div className="grid md:grid-cols-2 gap-4">
+
+        <Info label="Full Name" value={user?.full_name} />
+
+        <Info label="Employee Code" value={user?.employee_code} />
+
+        <Info label="Email" value={user?.email} />
+
+        <Info label="Phone" value={user?.phone} />
+
+        <Info label="Role" value={user?.role} />
+
+        <Info label="Designation" value={user?.designation} />
+
+        <Info label="Department" value={user?.department} />
+
+        <Info label="Joining Date" value={user?.joining_date} />
+
+        <Info label="Branch" value={user?.branch_name} />
+
+        <Info label="Shift" value={user?.shift_name} />
+
+        <Info label="Status" value={user?.status} />
+
+      </div>
+
+    </div>
+
+    <div className="glass-card p-6">
+
+      <h3 className="text-lg font-bold text-slate-800 mb-5">
+
+        My Summary
+
+      </h3>
+
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+
+        <SummaryCard
+          title="Attendance"
+          value="--"
+        />
+
+        <SummaryCard
+          title="Leaves"
+          value="--"
+        />
+
+        <SummaryCard
+          title="Payroll"
+          value="--"
+        />
+
+        <SummaryCard
+          title="Role"
+          value={user?.role}
+        />
+
+      </div>
+
+    </div>
+
+  </div>
+);
+
+
 
 function Info({ label, value }) {
   return (
@@ -108,3 +178,19 @@ function Info({ label, value }) {
     </div>
   );
 }
+
+function SummaryCard({ title, value }) {
+  return (
+    <div className="rounded-2xl bg-white border border-slate-200 p-5 text-center">
+
+      <p className="text-sm text-slate-500">
+        {title}
+      </p>
+
+      <h2 className="mt-2 text-2xl font-bold text-brand-600">
+        {value}
+      </h2>
+
+    </div>
+  );
+}}
