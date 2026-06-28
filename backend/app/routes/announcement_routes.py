@@ -31,6 +31,19 @@ def create_announcement():
     }), 201
 
 
+@announcement_bp.route("/api/announcements/<int:announcement_id>", methods=["DELETE"])
+def delete_announcement(announcement_id):
+    announcement = announcement = db.session.get( Announcement, announcement_id )
+
+    if not announcement:
+        return jsonify({"message": "Announcement not found"}), 404
+
+    db.session.delete(announcement)
+    db.session.commit()
+
+    return jsonify({"message": "Announcement deleted successfully"}), 200
+
+
 @announcement_bp.route(
     "/api/announcements",
     methods=["GET"]
