@@ -168,6 +168,34 @@ export default function Profile() {
   </div>
 );
 
+<div className="glass-card p-6">
+
+  <h3 className="text-lg font-bold text-slate-800 mb-5">
+    Quick Actions
+  </h3>
+
+  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+
+    <button className="btn-secondary">
+      My Attendance
+    </button>
+
+    <button className="btn-secondary">
+      My Leaves
+    </button>
+
+    <button className="btn-secondary">
+      My Payroll
+    </button>
+
+    <button className="btn-primary">
+      Upload Photo
+    </button>
+
+  </div>
+
+</div>
+
 
 
 function Info({ label, value }) {

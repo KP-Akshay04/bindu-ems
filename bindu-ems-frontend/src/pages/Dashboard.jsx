@@ -287,13 +287,18 @@ const present = attendance.filter((a) => {
 }).length;
 
     const onLeave = leaves.filter((l) => {
-  const status =
+  const approved =
     String(l.status ?? "").toLowerCase() === "approved";
 
-  const start = String(l.start_date).slice(0, 10);
-  const end = String(l.end_date).slice(0, 10);
+  const from = String(
+    l.from_date ?? l.start_date ?? ""
+  ).slice(0, 10);
 
-  return status && today >= start && today <= end;
+  const to = String(
+    l.to_date ?? l.end_date ?? ""
+  ).slice(0, 10);
+
+  return approved && today >= from && today <= to;
 }).length;
 
 
@@ -393,7 +398,7 @@ return {
           { label: "On Leave", value: stats.onLeave, delta: "Approved leaves", icon: CalendarDays, accent: "from-amber-400 to-orange-500" },
           { label: "Monthly Payroll", value: formatINR(stats.monthlyPayroll), delta: "Latest cycle", icon: Wallet, accent: "from-violet-400 to-indigo-600" },
         ]
-      : (role === "HR" || role === "HR Admin")
+      : (role === "HR" || role === "HR")
       ? [
           { label: "Employees", value: stats.total, delta: "Managed workforce", icon: Users, accent: "from-brand-400 to-brand-600" },
           { label: "Present Today", value: stats.present, delta: "Attendance", icon: UserCheck, accent: "from-emerald-400 to-teal-600" },
@@ -407,9 +412,40 @@ return {
   return (
     <div className="space-y-6">
 
+      <div className="glass-card p-6">
+
+  <h1 className="text-3xl font-bold text-slate-800">
+
+    Good{" "}
+
+    {new Date().getHours() < 12
+      ? "Morning"
+      : new Date().getHours() < 17
+      ? "Afternoon"
+      : "Evening"}
+
+    {user?.full_name
+      ? `, ${user.full_name.split(" ")[0]}`
+      : ""}
+
+  </h1>
+
+  <p className="text-slate-500 mt-2">
+
+    {new Date().toLocaleDateString("en-IN", {
+      weekday: "long",
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    })}
+
+  </p>
+
+</div>
+
       {/* Employee work status / timers */}
     
-{["Employee", "HR", "HR Admin", "Super Admin", "Manager"].includes(role) && (
+{["Employee", "HR", "Super Admin"].includes(role) && (
   <div className="glass-card p-5">
 
     <div className="flex items-center justify-between">
@@ -656,6 +692,15 @@ return {
             ))
           )}
         </div>
+
+        <div className="text-center text-xs text-slate-400 py-6">
+
+  Last refreshed:{" "}
+
+  {new Date().toLocaleTimeString("en-IN")}
+
+</div>
+
       </div>
     </div>
   );
