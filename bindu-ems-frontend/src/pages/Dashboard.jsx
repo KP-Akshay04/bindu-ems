@@ -391,23 +391,97 @@ return {
 
   // ---- ROLE-BASED KPIs ----
   const KPIS =
-    role === "Super Admin"
-      ? [
-          { label: "Total Employees", value: stats.total, delta: "Workforce strength", icon: Users, accent: "from-brand-400 to-brand-600" },
-          { label: "Present Today", value: stats.present, delta: "Currently active", icon: UserCheck, accent: "from-emerald-400 to-teal-600" },
-          { label: "On Leave", value: stats.onLeave, delta: "Approved leaves", icon: CalendarDays, accent: "from-amber-400 to-orange-500" },
-          { label: "Monthly Payroll", value: formatINR(stats.monthlyPayroll), delta: "Latest cycle", icon: Wallet, accent: "from-violet-400 to-indigo-600" },
-        ]
-      : (role === "HR" || role === "HR")
-      ? [
-          { label: "Employees", value: stats.total, delta: "Managed workforce", icon: Users, accent: "from-brand-400 to-brand-600" },
-          { label: "Present Today", value: stats.present, delta: "Attendance", icon: UserCheck, accent: "from-emerald-400 to-teal-600" },
-          { label: "Approved Leaves", value: stats.onLeave, delta: "Leave requests", icon: CalendarDays, accent: "from-amber-400 to-orange-500" },
-        ]
-      : [
-          { label: "Attendance", value: stats.present, delta: "My attendance", icon: UserCheck, accent: "from-emerald-400 to-teal-600" },
-          { label: "Leave Status", value: stats.onLeave, delta: "My leaves", icon: CalendarDays, accent: "from-amber-400 to-orange-500" },
-        ];
+  role === "Super Admin"
+    ? [
+        {
+          label: "Total Employees",
+          value: stats.total,
+          delta: "Workforce strength",
+          icon: Users,
+          accent: "from-brand-400 to-brand-600",
+        },
+        {
+          label: "Present Today",
+          value: stats.present,
+          delta: "Currently active",
+          icon: UserCheck,
+          accent: "from-emerald-400 to-teal-600",
+        },
+        {
+          label: "On Leave",
+          value: stats.onLeave,
+          delta: "Approved leaves",
+          icon: CalendarDays,
+          accent: "from-amber-400 to-orange-500",
+        },
+        {
+          label: "Monthly Payroll",
+          value: formatINR(stats.monthlyPayroll),
+          delta: "Latest cycle",
+          icon: Wallet,
+          accent: "from-violet-400 to-indigo-600",
+        },
+      ]
+    : role === "HR"
+    ? [
+        {
+          label: "Employees",
+          value: stats.total,
+          delta: "Managed workforce",
+          icon: Users,
+          accent: "from-brand-400 to-brand-600",
+        },
+        {
+          label: "Present Today",
+          value: stats.present,
+          delta: "Attendance",
+          icon: UserCheck,
+          accent: "from-emerald-400 to-teal-600",
+        },
+        {
+          label: "Approved Leaves",
+          value: stats.onLeave,
+          delta: "Leave requests",
+          icon: CalendarDays,
+          accent: "from-amber-400 to-orange-500",
+        },
+        {
+          label: "Monthly Payroll",
+          value: formatINR(stats.monthlyPayroll),
+          delta: "Current cycle",
+          icon: Wallet,
+          accent: "from-violet-400 to-indigo-600",
+        },
+      ]
+    : [
+        {
+          label: "My Attendance",
+          value: todayAttendance ? "Present" : "Not Checked In",
+          delta: "Today's Status",
+          icon: UserCheck,
+          accent: "from-emerald-400 to-teal-600",
+        },
+        {
+          label: "Leave Balance",
+          value: user?.leave_balance ?? 0,
+          delta: "Available",
+          icon: CalendarDays,
+          accent: "from-amber-400 to-orange-500",
+        },
+        {
+          label: "Latest Payroll",
+          value: formatINR(
+            payroll.find(
+              (p) =>
+                String(p.employee_id) ===
+                String(user?.employee_id)
+            )?.net_salary ?? 0
+          ),
+          delta: "Latest Salary",
+          icon: Wallet,
+          accent: "from-violet-400 to-indigo-600",
+        },
+      ];
 
   return (
     <div className="space-y-6">
@@ -445,7 +519,7 @@ return {
 
       {/* Employee work status / timers */}
     
-{["Employee", "HR", "Super Admin"].includes(role) && (
+{role === "Employee" && (
   <div className="glass-card p-5">
 
     <div className="flex items-center justify-between">
@@ -520,34 +594,55 @@ return {
             <div
   key={s.label}
   onClick={() => {
-    if (
-      s.label === "Total Employees" ||
-      s.label === "Employees"
-    ) {
+
+  if (role === "Employee") {
+
+    switch (s.label) {
+
+      case "My Attendance":
+        navigate("/attendance");
+        break;
+
+      case "Leave Balance":
+        navigate("/leaves");
+        break;
+
+      case "Latest Payroll":
+        navigate("/payroll");
+        break;
+
+      default:
+        break;
+    }
+
+    return;
+  }
+
+  switch (s.label) {
+
+    case "Total Employees":
+    case "Employees":
       navigate("/employees");
-    }
+      break;
 
-    if (
-      s.label === "Present Today" ||
-      s.label === "Attendance"
-    ) {
+    case "Present Today":
       navigate("/attendance");
-    }
+      break;
 
-    if (
-      s.label === "On Leave" ||
-      s.label === "Approved Leaves" ||
-      s.label === "Leave Status"
-    ) {
+    case "On Leave":
+    case "Approved Leaves":
       navigate("/leaves");
-    }
+      break;
 
-    if (
-      s.label === "Monthly Payroll"
-    ) {
+    case "Monthly Payroll":
       navigate("/payroll");
-    }
-  }}
+      break;
+
+    default:
+      break;
+  }
+
+}}
   className="glass-card p-5 hover:-translate-y-0.5 transition-transform duration-300 cursor-pointer"
 >
 
@@ -572,101 +667,250 @@ return {
         })}
       </div>
 
-      {/* Charts */}
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
-        <div className="xl:col-span-2 glass-card p-5">
-          <div className="flex items-center justify-between mb-2">
-            <h3 className="text-base font-bold text-slate-800">Weekly Attendance Trend</h3>
-            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-brand-100 text-brand-700">
-              This week
-            </span>
-          </div>
-          <div className="h-72">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={attendanceTrend} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" />
-                <XAxis dataKey="day" stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} />
-                <YAxis stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} />
-                <Tooltip contentStyle={{ background: "rgba(255,255,255,0.95)", border: "1px solid #BAE6FD", borderRadius: 12, fontSize: 12 }} />
-                <Line type="monotone" dataKey="present" stroke="#0EA5E9" strokeWidth={3} dot={{ r: 4, fill: "#0EA5E9" }} />
-                <Line type="monotone" dataKey="absent" stroke="#F43F5E" strokeWidth={2.5} dot={{ r: 3 }} />
-                <Line type="monotone" dataKey="leave" stroke="#F59E0B" strokeWidth={2.5} dot={{ r: 3 }} />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
+      {role !== "Employee" && (
+  <>
+    {/* Charts */}
+    <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
+      <div className="xl:col-span-2 glass-card p-5">
+        <div className="flex items-center justify-between mb-2">
+          <h3 className="text-base font-bold text-slate-800">
+            Weekly Attendance Trend
+          </h3>
+          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-brand-100 text-brand-700">
+            This week
+          </span>
         </div>
 
-        <div className="glass-card p-5">
-          <h3 className="text-base font-bold text-slate-800">Payroll Breakdown</h3>
-          <p className="text-xs text-slate-500 mb-2">Current cycle</p>
-          <div className="h-72">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie data={payrollBreakdown} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={55} outerRadius={90} paddingAngle={3}>
-                  {payrollBreakdown.map((_, i) => (
-                    <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />
-                  ))}
-                </Pie>
-                <Tooltip formatter={(v) => formatINR(v)} contentStyle={{ background: "rgba(255,255,255,0.95)", border: "1px solid #BAE6FD", borderRadius: 12, fontSize: 12 }} />
-                <Legend iconType="circle" wrapperStyle={{ fontSize: 12 }} />
-              </PieChart>
-            </ResponsiveContainer>
-          </div>
+        <div className="h-72">
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart
+              data={attendanceTrend}
+              margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
+            >
+              <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" />
+              <XAxis
+                dataKey="day"
+                stroke="#94a3b8"
+                fontSize={12}
+                tickLine={false}
+                axisLine={false}
+              />
+              <YAxis
+                stroke="#94a3b8"
+                fontSize={12}
+                tickLine={false}
+                axisLine={false}
+              />
+              <Tooltip
+                contentStyle={{
+                  background: "rgba(255,255,255,0.95)",
+                  border: "1px solid #BAE6FD",
+                  borderRadius: 12,
+                  fontSize: 12,
+                }}
+              />
+              <Line
+                type="monotone"
+                dataKey="present"
+                stroke="#0EA5E9"
+                strokeWidth={3}
+                dot={{ r: 4, fill: "#0EA5E9" }}
+              />
+              <Line
+                type="monotone"
+                dataKey="absent"
+                stroke="#F43F5E"
+                strokeWidth={2.5}
+                dot={{ r: 3 }}
+              />
+              <Line
+                type="monotone"
+                dataKey="leave"
+                stroke="#F59E0B"
+                strokeWidth={2.5}
+                dot={{ r: 3 }}
+              />
+            </LineChart>
+          </ResponsiveContainer>
         </div>
       </div>
 
-      {/* Department + Recent Activity */}
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
-        <div className="xl:col-span-2 glass-card p-5">
-          <h3 className="text-base font-bold text-slate-800">Department Headcount</h3>
-          <p className="text-xs text-slate-500 mb-2">Live from /api/employees</p>
-          <div className="h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={deptHeadcount} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                <defs>
-                  <linearGradient id="barGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#38BDF8" />
-                    <stop offset="100%" stopColor="#0369A1" />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" />
-                <XAxis dataKey="dept" stroke="#94a3b8" fontSize={11} tickLine={false} axisLine={false} interval={0} angle={-15} textAnchor="end" height={50} />
-                <YAxis stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} />
-                <Tooltip contentStyle={{ background: "rgba(255,255,255,0.95)", border: "1px solid #BAE6FD", borderRadius: 12, fontSize: 12 }} />
-                <Bar dataKey="count" fill="url(#barGrad)" radius={[8, 8, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
+      <div className="glass-card p-5">
+        <h3 className="text-base font-bold text-slate-800">
+          Payroll Breakdown
+        </h3>
 
-        <div className="glass-card p-5">
-          <h3 className="text-base font-bold text-slate-800 mb-4">Recent Activity</h3>
-          <div className="space-y-3">
-            {recentActivity.length === 0 ? (
-              <p className="text-sm text-slate-500">No recent activity.</p>
-            ) : (
-              recentActivity.map((a) => (
-                <div
-                  key={a.id}
-                  className="flex items-start gap-3 p-2.5 rounded-xl hover:bg-brand-50 transition-colors"
+        <p className="text-xs text-slate-500 mb-2">
+          Current cycle
+        </p>
+
+        <div className="h-72">
+          <ResponsiveContainer width="100%" height="100%">
+            <PieChart>
+              <Pie
+                data={payrollBreakdown}
+                dataKey="value"
+                nameKey="name"
+                cx="50%"
+                cy="50%"
+                innerRadius={55}
+                outerRadius={90}
+                paddingAngle={3}
+              >
+                {payrollBreakdown.map((_, i) => (
+                  <Cell
+                    key={i}
+                    fill={PIE_COLORS[i % PIE_COLORS.length]}
+                  />
+                ))}
+              </Pie>
+
+              <Tooltip
+                formatter={(v) => formatINR(v)}
+                contentStyle={{
+                  background: "rgba(255,255,255,0.95)",
+                  border: "1px solid #BAE6FD",
+                  borderRadius: 12,
+                  fontSize: 12,
+                }}
+              />
+
+              <Legend
+                iconType="circle"
+                wrapperStyle={{ fontSize: 12 }}
+              />
+            </PieChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+    </div>
+
+    {/* Department + Recent Activity */}
+
+    <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
+      <div className="xl:col-span-2 glass-card p-5">
+        <h3 className="text-base font-bold text-slate-800">
+          Department Headcount
+        </h3>
+
+        <p className="text-xs text-slate-500 mb-2">
+          Live from /api/employees
+        </p>
+
+        <div className="h-64">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart
+              data={deptHeadcount}
+              margin={{
+                top: 10,
+                right: 10,
+                left: -20,
+                bottom: 0,
+              }}
+            >
+              <defs>
+                <linearGradient
+                  id="barGrad"
+                  x1="0"
+                  y1="0"
+                  x2="0"
+                  y2="1"
                 >
-                  <span className="inline-flex items-center justify-center w-9 h-9 rounded-full bg-gradient-to-br from-brand-400 to-brand-600 text-white text-xs font-bold">
-                    {initials(a.who)}
-                  </span>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm text-slate-800">
-                      <span className="font-semibold">{a.who}</span> {a.action}
-                    </p>
-                    <p className="text-xs text-slate-400 mt-0.5 flex items-center gap-1">
-                      <Clock className="w-3 h-3" /> {a.when || "—"}
-                    </p>
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
+                  <stop
+                    offset="0%"
+                    stopColor="#38BDF8"
+                  />
+                  <stop
+                    offset="100%"
+                    stopColor="#0369A1"
+                  />
+                </linearGradient>
+              </defs>
+
+              <CartesianGrid
+                strokeDasharray="3 3"
+                stroke="#E2E8F0"
+              />
+
+              <XAxis
+                dataKey="dept"
+                stroke="#94a3b8"
+                fontSize={11}
+                tickLine={false}
+                axisLine={false}
+                interval={0}
+                angle={-15}
+                textAnchor="end"
+                height={50}
+              />
+
+              <YAxis
+                stroke="#94a3b8"
+                fontSize={12}
+                tickLine={false}
+                axisLine={false}
+              />
+
+              <Tooltip
+                contentStyle={{
+                  background: "rgba(255,255,255,0.95)",
+                  border: "1px solid #BAE6FD",
+                  borderRadius: 12,
+                  fontSize: 12,
+                }}
+              />
+
+              <Bar
+                dataKey="count"
+                fill="url(#barGrad)"
+                radius={[8, 8, 0, 0]}
+              />
+            </BarChart>
+          </ResponsiveContainer>
         </div>
       </div>
+
+      <div className="glass-card p-5">
+        <h3 className="text-base font-bold text-slate-800 mb-4">
+          Recent Activity
+        </h3>
+
+        <div className="space-y-3">
+          {recentActivity.length === 0 ? (
+            <p className="text-sm text-slate-500">
+              No recent activity.
+            </p>
+          ) : (
+            recentActivity.map((a) => (
+              <div
+                key={a.id}
+                className="flex items-start gap-3 p-2.5 rounded-xl hover:bg-brand-50 transition-colors"
+              >
+                <span className="inline-flex items-center justify-center w-9 h-9 rounded-full bg-gradient-to-br from-brand-400 to-brand-600 text-white text-xs font-bold">
+                  {initials(a.who)}
+                </span>
+
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm text-slate-800">
+                    <span className="font-semibold">
+                      {a.who}
+                    </span>{" "}
+                    {a.action}
+                  </p>
+
+                  <p className="text-xs text-slate-400 mt-0.5 flex items-center gap-1">
+                    <Clock className="w-3 h-3" />
+                    {a.when || "—"}
+                  </p>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      </div>
+    </div>
+  </>
+)}
 
       {/* Announcements — separate row */}
       <div className="glass-card p-5">
@@ -704,4 +948,4 @@ return {
       </div>
     </div>
   );
-} 
+}
