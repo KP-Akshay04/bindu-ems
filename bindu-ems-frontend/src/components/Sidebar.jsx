@@ -45,9 +45,11 @@ const NAV_ITEMS = {
     { to: "/shifts", label: "Shift Management", icon: Clock3 },
 
     // Personal
-    { to: "/profile", label: "My Profile", icon: Users },
+    { to: "/attendance", label: "My Attendance", icon: ClipboardCheck },
 
-    { to: "/settings", label: "Settings", icon: Clock3 },
+    { to: "/leaves", label: "My Leaves", icon: CalendarRange },
+
+    { to: "/payroll", label: "My Payslips", icon: Wallet },
   ],
 
   HR: [
@@ -66,7 +68,11 @@ const NAV_ITEMS = {
     { to: "/shifts", label: "Shift Management", icon: Clock3 },
 
     // Personal
-    { to: "/profile", label: "My Profile", icon: Users },
+    { to: "/attendance", label: "My Attendance", icon: ClipboardCheck },
+
+    { to: "/leaves", label: "My Leaves", icon: CalendarRange },
+
+    { to: "/payroll", label: "My Payslips", icon: Wallet },
   ],
 
   Employee: [
@@ -79,8 +85,6 @@ const NAV_ITEMS = {
     { to: "/payroll", label: "My Payslips", icon: Wallet },
 
     { to: "/announcements", label: "Announcements", icon: Bell },
-
-    { to: "/profile", label: "My Profile", icon: Users },
   ],
 };
 
