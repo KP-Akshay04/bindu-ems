@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import {
   Shield,
-  Users,
+  Crown,
   User as UserIcon,
   Eye,
   EyeOff,
@@ -15,8 +15,21 @@ import {
 import { useAuth } from "../context/AuthContext";
 
 const ROLES = [
-  { id: "hr", label: "HR", icon: Shield },
-  { id: "employee", label: "Employee", icon: UserIcon },
+  {
+    id: "super_admin",
+    label: "Super Admin",
+    icon: Crown,
+  },
+  {
+    id: "hr",
+    label: "HR",
+    icon: Shield,
+  },
+  {
+    id: "employee",
+    label: "Employee",
+    icon: UserIcon,
+  },
 ];
 
 function DropLogo({ size = 56 }) {
