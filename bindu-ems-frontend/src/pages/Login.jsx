@@ -22,7 +22,7 @@ const ROLES = [
   },
   {
     id: "hr",
-    label: "HR ADMIN",
+    label: "HR",
     icon: Shield,
   },
   {
