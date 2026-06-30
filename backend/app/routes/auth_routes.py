@@ -79,7 +79,15 @@ def login():
         "full_name": employee.full_name,
         "email": employee.email,
         "designation": employee.designation,
-        "role": employee.role,
+        "role": (
+    "HR"
+    if str(employee.role).strip().lower() in ["hr", "hr admin", "hr_admin"]
+    else (
+        "Super Admin"
+        if str(employee.role).strip().lower() in ["super admin", "admin", "super_admin"]
+        else "Employee"
+    )
+),
         "phone": employee.phone,
         "status": employee.status,
         "employee_photo": employee.employee_photo,
