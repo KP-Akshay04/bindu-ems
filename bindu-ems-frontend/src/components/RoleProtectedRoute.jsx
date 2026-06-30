@@ -1,10 +1,10 @@
 import { Navigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 
-export default function RoleProtectedRoute({
-  allowedRoles = [],
-  children,
-}) {
+export default function RoleProtectedRoute(props) {
+  console.log("FULL PROPS =>", props);
+
+  const { allowedRoles = [], children } = props;
   const { user } = useAuth();
 
   if (!user) {
@@ -19,8 +19,8 @@ export default function RoleProtectedRoute({
     String(role).trim().toLowerCase()
   );
 
-  console.log("Current Role:", currentRole);
-  console.log("Allowed Roles:", normalizedRoles);
+  console.log("Current Role =>", currentRole);
+  console.log("Allowed Roles =>", normalizedRoles);
 
   if (!normalizedRoles.includes(currentRole)) {
     return (
