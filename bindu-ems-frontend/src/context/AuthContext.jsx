@@ -7,7 +7,7 @@ const AuthContext = createContext(null);
 // Centralized roles
 export const ROLES = {
   SUPER_ADMIN: "Super Admin",
-  HR: "HR",
+  HR: "HR ADMIN",
   EMPLOYEE: "Employee",
 };
 
