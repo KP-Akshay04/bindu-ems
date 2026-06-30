@@ -28,6 +28,9 @@ const ALL_ROLES = [
   ROLES.EMPLOYEE,
 ];
 
+console.log("MANAGEMENT_ROLES =", MANAGEMENT_ROLES);
+console.log("ALL_ROLES =", ALL_ROLES);
+
 export default function App() {
   return (
     <AuthProvider>
