@@ -46,9 +46,7 @@ const NAV_ITEMS = {
 
     // Personal
     { to: "/attendance", label: "My Attendance", icon: ClipboardCheck },
-
     { to: "/leaves", label: "My Leaves", icon: CalendarRange },
-
     { to: "/payroll", label: "My Payslips", icon: Wallet },
   ],
 
@@ -68,11 +66,9 @@ const NAV_ITEMS = {
     { to: "/shifts", label: "Shift Management", icon: Clock3 },
 
     // Personal
-    { to: "/attendance", label: "My Attendance", icon: ClipboardCheck },
-
-    { to: "/leaves", label: "My Leaves", icon: CalendarRange },
-
-    { to: "/payroll", label: "My Payslips", icon: Wallet },
+    { to: "/my-attendance", label: "My Attendance", icon: ClipboardCheck },
+    { to: "/my-leaves", label: "My Leaves", icon: CalendarRange },
+    { to: "/my-payroll", label: "My Payslips", icon: Wallet },
   ],
 
   Employee: [
