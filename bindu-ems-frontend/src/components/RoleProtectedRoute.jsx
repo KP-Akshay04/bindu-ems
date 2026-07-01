@@ -5,6 +5,9 @@ export default function RoleProtectedRoute({
   allowedRoles = [],
   children,
 }) {
+
+  throw new Error("THIS IS THE ROLEPROTECTEDROUTE I AM EDITING");
+  
   const { user } = useAuth();
 
   console.log("========== ROLE CHECK ==========");
@@ -30,7 +33,7 @@ export default function RoleProtectedRoute({
         <p className="mt-2 text-gray-600">
           You do not have permission to access this page.
         </p>
-      </div>
+      </div>  
     );
   }
 
