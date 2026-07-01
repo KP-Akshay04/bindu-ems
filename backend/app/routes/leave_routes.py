@@ -15,19 +15,29 @@ def apply_leave():
 
     data = request.get_json()
 
+    employee_id = data.get("employee_id")
+
+    employee = Employee.query.get(employee_id)
+
+    if not employee:
+        return jsonify({
+            "message": "Employee not found"
+        }), 404
+
     leave = LeaveRequest(
         employee_id=employee_id,
         leave_type=data["leave_type"],
         start_date=data["start_date"],
         end_date=data["end_date"],
-        reason=data["reason"]
+        reason=data["reason"],
+        status="Pending"
     )
 
     db.session.add(leave)
     db.session.commit()
 
     return jsonify({
-        "message": "Leave request submitted"
+        "message": "Leave request submitted successfully"
     }), 201
 
 
