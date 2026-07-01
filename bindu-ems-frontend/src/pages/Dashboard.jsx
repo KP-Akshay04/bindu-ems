@@ -519,7 +519,7 @@ return {
 
       {/* Employee work status / timers */}
     
-{role === "Employee" && (
+{user && (
   <div className="glass-card p-5">
 
     <div className="flex items-center justify-between">
