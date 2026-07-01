@@ -2,38 +2,33 @@ import { Navigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 
 export default function RoleProtectedRoute({
-  allowedRoles = [],
+  allowedRoles,
   children,
 }) {
-
-  throw new Error("THIS IS THE ROLEPROTECTEDROUTE I AM EDITING");
-  
   const { user } = useAuth();
-
-  console.log("========== ROLE CHECK ==========");
-  console.log("User:", user);
-  console.log("User Role:", user?.role);
-  console.log("Allowed Roles:", allowedRoles);
-  console.log(
-    "Includes:",
-    allowedRoles.includes(user?.role)
-  );
 
   if (!user) {
     return <Navigate to="/login" replace />;
   }
 
+  if (!allowedRoles || !Array.isArray(allowedRoles)) {
+    console.error("allowedRoles prop missing");
+    return <Navigate to="/dashboard" replace />;
+  }
+
   if (!allowedRoles.includes(user.role)) {
     return (
-      <div className="p-8 text-center">
-        <h2 className="text-2xl font-bold text-red-600">
-          Access Denied
-        </h2>
+      <div className="min-h-[60vh] flex items-center justify-center">
+        <div className="text-center">
+          <h2 className="text-3xl font-bold text-red-600">
+            Access Denied
+          </h2>
 
-        <p className="mt-2 text-gray-600">
-          You do not have permission to access this page.
-        </p>
-      </div>  
+          <p className="mt-2 text-slate-500">
+            You do not have permission to access this page.
+          </p>
+        </div>
+      </div>
     );
   }
 

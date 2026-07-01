@@ -1,38 +1,25 @@
-import { Navigate } from "react-router-dom";
+import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 
-export default function RoleProtectedRoute({
-  allowedRoles = [],
-  children,
-}) {
-  const { user } = useAuth();
+export default function RequireAuth({ children }) {
+  const { user, hydrated } = useAuth();
+  const location = useLocation();
 
-  if (!user) {
-    return <Navigate to="/login" replace />;
+  if (!hydrated) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        Loading...
+      </div>
+    );
   }
 
-  const currentRole = String(user.role || "")
-    .trim()
-    .toLowerCase();
-
-  const normalizedRoles = allowedRoles.map((r) =>
-    String(r).trim().toLowerCase()
-  );
-
-  if (!normalizedRoles.includes(currentRole)) {
-    console.log("Current Role:", user.role);
-    console.log("Allowed Roles:", allowedRoles);
-
+  if (!user) {
     return (
-      <div className="min-h-[60vh] flex flex-col items-center justify-center">
-        <h2 className="text-3xl font-bold text-red-600">
-          Access Denied
-        </h2>
-
-        <p className="mt-2 text-slate-500">
-          You do not have permission to access this page.
-        </p>
-      </div>
+      <Navigate
+        to="/login"
+        state={{ from: location }}
+        replace
+      />
     );
   }
 
