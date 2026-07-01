@@ -19,10 +19,6 @@ export default function RoleProtectedRoute({
     String(r).trim().toLowerCase()
   );
 
-  if (!normalizedRoles.includes(currentRole)) {
-    console.log("Current Role:", user.role);
-    console.log("Allowed Roles:", allowedRoles);
-
     return (
       <div className="min-h-[60vh] flex flex-col items-center justify-center">
         <h2 className="text-3xl font-bold text-red-600">
@@ -37,4 +33,3 @@ export default function RoleProtectedRoute({
   }
 
   return children;
-}
