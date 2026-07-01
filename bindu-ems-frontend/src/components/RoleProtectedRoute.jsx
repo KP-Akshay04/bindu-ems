@@ -1,28 +1,26 @@
 import { Navigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 
-export default function RoleProtectedRoute(props) {
-  console.log("FULL PROPS =>", props);
-
-  const { allowedRoles = [], children } = props;
+export default function RoleProtectedRoute({
+  allowedRoles = [],
+  children,
+}) {
   const { user } = useAuth();
+
+  console.log("========== ROLE CHECK ==========");
+  console.log("User:", user);
+  console.log("User Role:", user?.role);
+  console.log("Allowed Roles:", allowedRoles);
+  console.log(
+    "Includes:",
+    allowedRoles.includes(user?.role)
+  );
 
   if (!user) {
     return <Navigate to="/login" replace />;
   }
 
-  const currentRole = String(user.role || "")
-    .trim()
-    .toLowerCase();
-
-  const normalizedRoles = allowedRoles.map((role) =>
-    String(role).trim().toLowerCase()
-  );
-
-  console.log("Current Role =>", currentRole);
-  console.log("Allowed Roles =>", normalizedRoles);
-
-  if (!normalizedRoles.includes(currentRole)) {
+  if (!allowedRoles.includes(user.role)) {
     return (
       <div className="p-8 text-center">
         <h2 className="text-2xl font-bold text-red-600">
