@@ -16,6 +16,8 @@ import Shifts from "./pages/Shifts";
 import Announcements from "./pages/Announcements";
 import Profile from "./pages/Profile";
 import Settings from "./pages/Settings";
+import MyAttendance from "./pages/MyAttendance";
+import MyLeaves from "./pages/MyLeaves";
 
 const MANAGEMENT_ROLES = [
   ROLES.SUPER_ADMIN,
@@ -73,35 +75,26 @@ export default function App() {
               }
             />
 
-            {/* Attendance */}
-            <Route
-              path="/attendance"
-              element={
-                <RoleProtectedRoute allowedRoles={ALL_ROLES}>
-                  <Attendance />
-                </RoleProtectedRoute>
-              }
-            />
+            <Route path="/attendance" element={<Attendance />} />
 
-            {/* Leave Management */}
-            <Route
-              path="/leaves"
-              element={
-                <RoleProtectedRoute allowedRoles={ALL_ROLES}>
-                  <Leaves />
-                </RoleProtectedRoute>
-              }
-            />
+            <Route path="/my-attendance" element={
+    <RoleProtectedRoute allowedRoles={ALL_ROLES}>
+      <MyAttendance />
+    </RoleProtectedRoute>
+  }
+/>
 
-            {/* Payroll */}
-            <Route
-              path="/payroll"
-              element={
-                <RoleProtectedRoute allowedRoles={ALL_ROLES}>
-                  <Payroll />
-                </RoleProtectedRoute>
-              }
-            />
+            <Route path="/leaves" element={<Leaves />} />
+
+            <Route path="/my-leaves" element={
+    <RoleProtectedRoute allowedRoles={ALL_ROLES}>
+      <MyLeaves />
+    </RoleProtectedRoute>
+  }
+/>
+            <Route path="/payroll" element={<Payroll />} />
+
+          {/**<Route path="/my-payroll" element={<MyPayroll />} />**/}
 
             {/* Shift Management */}
             <Route

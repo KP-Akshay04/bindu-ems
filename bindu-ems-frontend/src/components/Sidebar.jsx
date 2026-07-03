@@ -45,9 +45,9 @@ const NAV_ITEMS = {
     { to: "/shifts", label: "Shift Management", icon: Clock3 },
 
     // Personal
-    { to: "/attendance", label: "My Attendance", icon: ClipboardCheck },
-    { to: "/leaves", label: "My Leaves", icon: CalendarRange },
-    { to: "/payroll", label: "My Payslips", icon: Wallet },
+    { to: "/my-attendance", label: "My Attendance", icon: ClipboardCheck },
+    { to: "/my-leaves", label: "My Leaves", icon: CalendarRange },
+    { to: "/my-payroll", label: "My Payslips", icon: Wallet },
   ],
 
   HR: [
@@ -72,16 +72,16 @@ const NAV_ITEMS = {
   ],
 
   Employee: [
-    { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
 
-    { to: "/attendance", label: "My Attendance", icon: ClipboardCheck },
+  { to: "/my-attendance", label: "My Attendance", icon: ClipboardCheck },
 
-    { to: "/leaves", label: "My Leaves", icon: CalendarRange },
+  { to: "/my-leaves", label: "My Leaves", icon: CalendarRange },
 
-    { to: "/payroll", label: "My Payslips", icon: Wallet },
+  { to: "/my-payroll", label: "My Payslips", icon: Wallet },
 
-    { to: "/announcements", label: "Announcements", icon: Bell },
-  ],
+  { to: "/announcements", label: "Announcements", icon: Bell },
+],
 };
 
 export default function Sidebar({ collapsed = false, onToggle, onNavigate }) {

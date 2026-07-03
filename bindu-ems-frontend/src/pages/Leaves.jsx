@@ -10,7 +10,7 @@ import { extractList, formatDate, initials } from "../utils/format";
 import { useAuth } from "../context/AuthContext";
 import LeaveDetailsDialog from "../components/LeaveDetailsDialog";
 
-export default function Leaves() {
+  export default function Leaves({ myRecordsOnly = false,}) {
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -28,7 +28,7 @@ export default function Leaves() {
     setError(null);
     try {
       const data = await fetchLeaves(
-  user?.role === "Employee"
+  myRecordsOnly || user?.role === "Employee"
     ? { employee_id: user.employee_id }
     : {}
 );
@@ -139,20 +139,30 @@ const handleReject = async (leaveId) => {
         })}
       </div>
 
+      
       <div className="glass-card p-4 flex flex-col md:flex-row md:items-center gap-3">
-        <div className="relative flex-1">
-          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-          <input
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search by employee, ID or type..."
-            className="input h-11 pl-10"
-          />
-        </div>
-        <button onClick={() => setOpen(true)} className="btn-primary h-11">
-          <CalendarPlus className="w-4 h-4" /> Apply Leave
-        </button>
-      </div>
+
+  {!myRecordsOnly && (
+    <div className="relative flex-1">
+      <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+      <input
+        value={query}
+        onChange={(e) => setQuery(e.target.value)}
+        placeholder="Search by employee, ID or type..."
+        className="input h-11 pl-10"
+      />
+    </div>
+  )}
+
+  <button
+    onClick={() => setOpen(true)}
+    className="btn-primary h-11"
+  >
+    <CalendarPlus className="w-4 h-4" />
+    Apply Leave
+  </button>
+
+</div>
 
       <div className="flex flex-wrap gap-1 p-1 bg-white/70 backdrop-blur-md border border-brand-100 rounded-xl w-fit">
         {[
@@ -187,16 +197,30 @@ const handleReject = async (leaveId) => {
         >
                 <div className="flex items-start justify-between gap-3 mb-4">
                   <div className="flex items-center gap-3">
-                    <span className="inline-flex items-center justify-center w-11 h-11 rounded-full ring-2 ring-brand-100 bg-gradient-to-br from-brand-400 to-brand-600 text-white text-sm font-bold">
-                      {initials(name)}
-                    </span>
-                    <div className="leading-tight">
-                      <p className="font-semibold text-slate-800"> {l.employee_name || l.full_name || name} </p>
+  <span className="inline-flex items-center justify-center w-11 h-11 rounded-full ring-2 ring-brand-100 bg-gradient-to-br from-brand-400 to-brand-600 text-white text-sm font-bold">
+    {initials(name)}
+  </span>
 
-                      <p className="text-xs text-slate-500"> ID : {l.employee_id} {" • "} {l.employee_code} {" • "} {l.department ?? "Department"}</p>
-                      <p className="text-xs text-slate-400"> {l.designation ?? l.role ?? "Employee"}</p>
-                    </div>
-                  </div>
+  <div className="leading-tight">
+    <p className="font-semibold text-slate-800">
+      {myRecordsOnly
+        ? user.full_name
+        : (l.employee_name || l.full_name || name)}
+    </p>
+
+    {!myRecordsOnly && (
+      <>
+        <p className="text-xs text-slate-500">
+          ID : {l.employee_id} • {l.employee_code} • {l.department ?? "Department"}
+        </p>
+
+        <p className="text-xs text-slate-400">
+          {l.designation ?? l.role ?? "Employee"}
+        </p>
+      </>
+    )}
+  </div>
+</div>
                   <StatusBadge status={l.status ?? "Pending"} />
                 </div>
 
@@ -225,7 +249,8 @@ const handleReject = async (leaveId) => {
                 )}
                 <p className="text-xs text-slate-400 mt-3">Applied on {formatDate(l.applied_on ?? l.created_at)}</p>
 
-                {user?.role !== "Employee" &&
+                {!myRecordsOnly &&
+ user?.role !== "Employee" &&
  String(l.status).toLowerCase() === "pending" && (
   <div className="flex gap-2 mt-4">
 

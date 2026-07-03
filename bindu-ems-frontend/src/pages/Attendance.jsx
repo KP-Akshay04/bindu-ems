@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useLocation } from "react-router-dom";
 import { UserCheck, UserX, Clock, CalendarOff, Search } from "lucide-react";
 import {
   ResponsiveContainer,
@@ -17,8 +18,13 @@ import { fetchAttendance } from "../services/api";
 import { extractList, formatDate, formatTime, initials } from "../utils/format";
 import { useAuth } from "../context/AuthContext";
 
-export default function Attendance() {
+
+export default function Attendance({
+    myRecordsOnly = false,
+}) {
   const { user } = useAuth();
+  const location = useLocation();
+  const isMyAttendance = location.pathname === "/my-attendance";
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [items, setItems] = useState([]);
@@ -29,13 +35,13 @@ export default function Attendance() {
     setLoading(true);
     setError(null);
     try {
-      const data = await fetchAttendance(
-  user?.role === "Employee"
+const data = await fetchAttendance(
+  isMyAttendance || user?.role === "Employee"
     ? { employee_id: user.employee_id }
     : {}
 );
       setItems(extractList(data, "attendance"));
-      console.log(items);
+      console.log(data);
     } catch (err) {
       setError(err?.response?.data?.message || err.message || "Failed to load attendance.");
     } finally {
@@ -129,7 +135,9 @@ export default function Attendance() {
         })}
       </div>
 
-      <div className="glass-card p-4">
+      {!isMyAttendance && (
+
+<div className="glass-card p-4">
 
   <div className="relative">
 
@@ -151,6 +159,7 @@ export default function Attendance() {
 
 </div>
 
+)}
       <div className="flex gap-1 p-1 bg-white/70 backdrop-blur-md border border-brand-100 rounded-xl w-fit">
         {[
           { id: "today", label: "Today" },
@@ -200,7 +209,9 @@ export default function Attendance() {
             <table className="w-full text-sm">
               <thead className="bg-brand-50/60">
                 <tr className="text-left text-xs uppercase tracking-wider text-slate-500 font-bold">
+                  {!isMyAttendance && (
                   <th className="px-5 py-3">Employee</th>
+                  )}
                   <th className="px-5 py-3">Date</th>
                   <th className="px-5 py-3">Check In</th>
                   <th className="px-5 py-3">Lunch Out</th>
@@ -216,39 +227,25 @@ export default function Attendance() {
                   const name = a.employee_name || `Employee #${a.employee_id ?? "—"}`;
                   return (
                     <tr key={a.id ?? i} className="hover:bg-brand-50/40">
-                      <td className="px-5 py-3">
-                        <div className="flex items-center gap-3">
-                          <span className="inline-flex items-center justify-center w-9 h-9 rounded-full ring-2 ring-brand-100 bg-gradient-to-br from-brand-400 to-brand-600 text-white text-xs font-bold">
-                            {initials(name)}
-                          </span>
-                          <div className="leading-tight">
-                            <p className="font-semibold text-slate-800">
-  {a.employee_name || name}
-</p>
+                      {!isMyAttendance && (
+  <td className="px-5 py-3">
+    <div className="flex items-center gap-3">
+      <div className="w-9 h-9 rounded-full bg-gradient-to-br from-brand-400 to-brand-600 text-white flex items-center justify-center font-bold">
+        {initials(name)}
+      </div>
 
-<p className="text-xs text-slate-500">
+      <div>
+        <p className="font-semibold text-slate-800">
+          {name}
+        </p>
 
-  ID :
-  {a.employee_id}
-
-  {" • "}
-
-  {a.employee_code}
-
-  {" • "}
-
-  {a.department ?? "Department"}
-
-</p>
-
-<p className="text-xs text-slate-400">
-
-  {a.designation ?? "Employee"}
-
-</p>
-                          </div>
-                        </div>
-                      </td>
+        <p className="text-xs text-slate-500">
+          {a.employee_code}
+        </p>
+      </div>
+    </div>
+  </td>
+)}
                       <td className="px-5 py-3 text-slate-700">{formatDate(a.attendance_date ?? a.date ?? a.created_at)}</td>
                       <td className="px-5 py-3 font-mono text-slate-700">{formatTime(a.check_in ?? a.login_time)}</td>
                       <td className="px-5 py-3 font-mono text-orange-600">{a.lunch_start_time? formatTime(a.lunch_start_time): "—"}</td>
