@@ -187,60 +187,35 @@ useEffect(() => {
 useEffect(() => {
   if (!todayAttendance) return;
 
-  // Shift already completed today
+  let shiftInterval;
+  let lunchInterval;
+
+  // Shift Timer
   if (todayAttendance.logout_time) {
-    const hours = Number(
-      todayAttendance.working_hours || 0
-    );
+    const hours = Number(todayAttendance.working_hours || 0);
 
     setShiftTimer(
-      formatTimer(
-        Math.floor(hours * 3600)
-      )
+      formatTimer(Math.floor(hours * 3600))
     );
   } else {
-    const interval = setInterval(() => {
-      const now = new Date();
+    shiftInterval = setInterval(() => {
+      if (!todayAttendance.login_time) return;
 
-      if (todayAttendance.login_time) {
-        const login = new Date(
-          todayAttendance.login_time
+      const login = new Date(todayAttendance.login_time);
+
+      if (!isNaN(login.getTime())) {
+        setShiftTimer(
+          formatTimer(
+            Math.floor((Date.now() - login.getTime()) / 1000)
+          )
         );
-
-        if (!isNaN(login.getTime())) {
-          setShiftTimer(
-            formatTimer(
-              Math.floor(
-                (now - login) / 1000
-              )
-            )
-          );
-        }
       }
     }, 1000);
-
-    return () => clearInterval(interval);
   }
 
-  // Lunch already completed
-  if (
-    Number(todayAttendance.lunch_minutes || 0) > 0
-  ) {
-    setLunchTimer(
-      formatTimer(
-        Number(todayAttendance.lunch_minutes) * 60
-      )
-    );
-  }
-
-  // Lunch currently running
-  else if (
-    workStatus === "Lunch Break" &&
-    todayAttendance.lunch_start_time
-  ) {
-    const lunchInterval = setInterval(() => {
-      const now = new Date();
-
+  // Lunch Timer
+  if (workStatus === "Lunch Break" && todayAttendance.lunch_start_time) {
+    lunchInterval = setInterval(() => {
       const lunchStart = new Date(
         todayAttendance.lunch_start_time
       );
@@ -248,17 +223,25 @@ useEffect(() => {
       if (!isNaN(lunchStart.getTime())) {
         setLunchTimer(
           formatTimer(
-            Math.floor(
-              (now - lunchStart) / 1000
-            )
+            Math.floor((Date.now() - lunchStart.getTime()) / 1000)
           )
         );
       }
     }, 1000);
-
-    return () => clearInterval(lunchInterval);
+  } else if (Number(todayAttendance.lunch_minutes || 0) > 0) {
+    setLunchTimer(
+      formatTimer(
+        Number(todayAttendance.lunch_minutes) * 60
+      )
+    );
+  } else {
+    setLunchTimer("00:00:00");
   }
 
+  return () => {
+    if (shiftInterval) clearInterval(shiftInterval);
+    if (lunchInterval) clearInterval(lunchInterval);
+  };
 }, [todayAttendance, workStatus]);
 
   // ---- DERIVED ----
