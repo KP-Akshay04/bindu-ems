@@ -90,6 +90,9 @@ export default function Dashboard() {
       setEmployees(extractList(employeesData, "employees"));
 
       const attendanceList = extractList(attendanceData, "attendance");
+      console.log("Attendance List:", attendanceList);
+      console.log("Current Employee:", user.employee_id);
+
       setAttendance(attendanceList);
 
       // Find today's attendance for the logged-in employee
@@ -103,6 +106,8 @@ export default function Dashboard() {
           String(a.employee_id) === String(user?.employee_id) &&
           String(a.attendance_date ?? "").slice(0, 10) === today
       );
+      console.log("Today's Date:", today);
+      console.log("Today's Record:", record);
 
       if (record) {
 
