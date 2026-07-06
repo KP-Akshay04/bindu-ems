@@ -73,7 +73,10 @@ const today =
   [items, today]
 );
 console.log("TODAY =", today);
-console.log("TODAY LIST =", todayList);
+console.log(
+  "TODAY STATUSES =",
+  todayList.map((x) => x.status)
+);
 
   const counts = useMemo(() => {
   const c = { present: 0, late: 0, absent: 0, leave: 0 };
