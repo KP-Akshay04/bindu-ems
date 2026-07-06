@@ -18,6 +18,7 @@ import Profile from "./pages/Profile";
 import Settings from "./pages/Settings";
 import MyAttendance from "./pages/MyAttendance";
 import MyLeaves from "./pages/MyLeaves";
+import MyPayroll from "./pages/MyPayroll";
 
 const MANAGEMENT_ROLES = [
   ROLES.SUPER_ADMIN,
@@ -94,7 +95,14 @@ export default function App() {
 />
             <Route path="/payroll" element={<Payroll />} />
 
-          {/**<Route path="/my-payroll" element={<MyPayroll />} />**/}
+          <Route
+  path="/my-payroll"
+  element={
+    <RoleProtectedRoute allowedRoles={ALL_ROLES}>
+      <MyPayroll />
+    </RoleProtectedRoute>
+  }
+/>
 
             {/* Shift Management */}
             <Route

@@ -13,6 +13,9 @@ export default function RequireAuth({ children }) {
     );
   }
 
+  console.log("RequireAuth User:", user);
+  console.log("Hydrated:", hydrated);
+
   if (!user) {
     return (
       <Navigate

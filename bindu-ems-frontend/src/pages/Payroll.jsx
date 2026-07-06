@@ -19,7 +19,9 @@ import { useAuth } from "../context/AuthContext";
 import PayslipDialog from "../components/PayslipDialog";
 
 
-export default function Payroll() {
+export default function Payroll({
+  myRecordsOnly = false,
+}) {
   const [showCreate, setShowCreate] = useState(false);
   const [employees, setEmployees] = useState([]);
 
@@ -48,13 +50,12 @@ export default function Payroll() {
 
   try {
     const payrollData = await fetchPayroll(
-      user?.role === "Employee"
-        ? {
-            employee_id:
-              user.employee_id,
-          }
-        : {}
-    );
+  myRecordsOnly || user?.role === "Employee"
+    ? {
+        employee_id: user.employee_id,
+      }
+    : {}
+);
 
     setItems(
       extractList(
@@ -305,25 +306,33 @@ const handleCreatePayroll =
         </div>
       </div>
 
-      <div className="glass-card p-4 flex flex-col lg:flex-row lg:items-center gap-3">
-        <div className="relative flex-1">
-          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-          <input
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search by employee, ID, department..."
-            className="input h-11 pl-10"
-          />
-        </div>
-        <select value={status} onChange={(e) => setStatus(e.target.value)} className="input h-11 w-[160px]">
-          <option value="all">All Status</option>
-          <option value="Paid">Paid</option>
-          <option value="Processing">Processing</option>
-          <option value="On Hold">On Hold</option>
-        </select>
-      </div>
+      {!myRecordsOnly && (
+  <div className="glass-card p-4 flex flex-col lg:flex-row lg:items-center gap-3">
+    <div className="relative flex-1">
+      <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+      <input
+        value={query}
+        onChange={(e) => setQuery(e.target.value)}
+        placeholder="Search by employee, ID, department..."
+        className="input h-11 pl-10"
+      />
+    </div>
 
-      {user?.role !== "Employee" && (
+    <select
+      value={status}
+      onChange={(e) => setStatus(e.target.value)}
+      className="input h-11 w-[160px]"
+    >
+      <option value="all">All Status</option>
+      <option value="Paid">Paid</option>
+      <option value="Processing">Processing</option>
+      <option value="On Hold">On Hold</option>
+    </select>
+  </div>
+)}
+
+      {!myRecordsOnly &&
+ user?.role !== "Employee" && (
   <div className="flex justify-end">
     <button
       onClick={() => setShowCreate(!showCreate)}
@@ -493,20 +502,26 @@ const handleCreatePayroll =
 
             <div className="leading-tight">
               <p className="font-semibold text-slate-800">
-  {p.employee_name || p.full_name || name}
+  {myRecordsOnly
+    ? user.full_name
+    : (p.employee_name || p.full_name || name)}
 </p>
 
-<p className="text-xs text-slate-500">
-  ID : {p.employee_id}
-  {" • "}
-  {p.employee_code}
-  {" • "}
-  {p.department ?? "Department"}
-</p>
+{!myRecordsOnly && (
+  <>
+    <p className="text-xs text-slate-500">
+      ID : {p.employee_id}
+      {" • "}
+      {p.employee_code}
+      {" • "}
+      {p.department ?? "Department"}
+    </p>
 
-<p className="text-xs text-slate-400">
-  {p.designation ?? p.role ?? "Employee"}
-</p>
+    <p className="text-xs text-slate-400">
+      {p.designation ?? p.role ?? "Employee"}
+    </p>
+  </>
+)}
 
             </div>
           </div>
