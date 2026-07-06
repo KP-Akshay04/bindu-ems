@@ -96,9 +96,14 @@ export default function Dashboard() {
       setAttendance(attendanceList);
 
       // Find today's attendance for the logged-in employee
-      const today = new Date()
-  .toISOString()
-  .slice(0, 10);
+      const now = new Date();
+
+const today =
+  now.getFullYear() +
+  "-" +
+  String(now.getMonth() + 1).padStart(2, "0") +
+  "-" +
+  String(now.getDate()).padStart(2, "0");
       
 
       const record = attendanceList.find(
@@ -252,7 +257,14 @@ useEffect(() => {
   // ---- DERIVED ----
   const stats = useMemo(() => {
     const total = employees.length;
-    const today = new Date().toISOString().slice(0, 10);
+    const now = new Date();
+
+const today =
+  now.getFullYear() +
+  "-" +
+  String(now.getMonth() + 1).padStart(2, "0") +
+  "-" +
+  String(now.getDate()).padStart(2, "0");
 
 const present = attendance.filter((a) => {
   const dateMatch =
