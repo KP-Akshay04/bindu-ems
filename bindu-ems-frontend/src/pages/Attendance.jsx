@@ -72,18 +72,37 @@ const today =
     ),
   [items, today]
 );
+console.log("TODAY =", today);
+console.log("TODAY LIST =", todayList);
 
   const counts = useMemo(() => {
-    const c = { present: 0, late: 0, absent: 0, leave: 0 };
-    (todayList.length ? todayList : items).forEach((a) => {
-      const s = String(a.status ?? "").toLowerCase();
-      if (s === "present" || s === "checked-in") c.present += 1;
-      else if (s === "late") c.late += 1;
-      else if (s === "absent") c.absent += 1;
-      else if (s === "on leave" || s === "leave") c.leave += 1;
-    });
-    return c;
-  }, [items, todayList]);
+  const c = { present: 0, late: 0, absent: 0, leave: 0 };
+
+  (todayList.length ? todayList : items).forEach((a) => {
+    const s = String(a.status ?? "").toLowerCase();
+
+    if (
+      s === "present" ||
+      s === "checked-in" ||
+      s === "working" ||
+      s === "loggedout" ||
+      s === "logged out"
+    ) {
+      c.present++;
+    } else if (s === "late") {
+      c.late++;
+    } else if (s === "absent") {
+      c.absent++;
+    } else if (
+      s === "on leave" ||
+      s === "leave"
+    ) {
+      c.leave++;
+    }
+  });
+
+  return c;
+}, [items, todayList]);
 
   const trend = useMemo(() => {
     const buckets = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((d) => ({ day: d, present: 0 }));
