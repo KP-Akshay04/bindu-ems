@@ -7,6 +7,8 @@ from app.utils.security import hash_password
 from app.utils.security import (hash_password,verify_password)
 from flask import send_from_directory
 from app.models.shift import Shift
+from app.models.department import Department
+from app.models.branch import Branch
 
 employee_bp = Blueprint(
     "employee_bp",
@@ -60,6 +62,15 @@ def get_employees():
         if emp.shift_id:
             shift = Shift.query.get(emp.shift_id)
 
+        department = None
+        branch = None
+
+        if emp.department_id:
+            department = Department.query.get(emp.department_id)
+
+        if emp.branch_id:
+            branch = Branch.query.get(emp.branch_id)
+
         result.append({
             "employee_id": emp.employee_id,
             "employee_code": emp.employee_code,
@@ -69,7 +80,12 @@ def get_employees():
             "phone": emp.phone,
 
             "branch_id": emp.branch_id,
+            "branch_name": branch.branch_name if branch else None,
+
             "department_id": emp.department_id,
+            "department_name": department.department_name if department else None,
+
+            "joining_date": str(emp.joining_date) if emp.joining_date else None,
 
             "shift_id": emp.shift_id,
             "shift_name": shift.shift_name if shift else None,

@@ -167,12 +167,12 @@ export default function Employees() {
                       </div>
                     </td>
                     <td className="px-5 py-3">
-                    <div><p className="font-medium text-slate-700">{e.department ?? "—"}</p>
+                    <div><p className="font-medium text-slate-700">{e.department_name || "—"}</p>
                       <p className="text-xs text-slate-500">Joined {formatDate(e.joined_date ?? e.joined ?? e.created_at)}</p>
                       </div>
                     </td>
                     <td className="px-5 py-3 text-slate-700">{e.designation ?? "—"}</td>
-                    <td className="px-5 py-3 text-slate-600">{formatDate(e.joined_date ?? e.joined ?? e.created_at)}</td>
+                    <p className="text-slate-600">{e.joining_date ? formatDate(e.joining_date) : "—"}</p>
                     <td className="px-5 py-3"><StatusBadge status={e.status ?? "Active"} /></td>
                     <td className="px-5 py-3">
                       <div className="flex items-center justify-end gap-1">
