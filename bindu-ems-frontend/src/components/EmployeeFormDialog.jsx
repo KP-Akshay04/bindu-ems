@@ -118,17 +118,6 @@ setDepartments(deptRes.data);
               
           </div>
           <div>
-            <label className="label">Designation</label>
-            <select className="input" value={form.designation} onChange={update("designation")}>
-              <option value="">Select Designation</option>
-              {designations.map((designation) => (
-                <option key={designation.designation_id} value={designation.designation_id}>
-                  {designation.designation_name}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div>
             <label className="label">Status</label>
             <select className="input" value={form.status} onChange={update("status")}>
               <option>Active</option>
