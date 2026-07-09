@@ -48,6 +48,8 @@ def create_app():
     from app.routes.auth_routes import auth_bp
     from app.models.announcement import Announcement
     from app.routes.announcement_routes import announcement_bp
+    from app.models.designation import Designation
+    from app.routes.designation_routes import designation_bp
 
     app.register_blueprint(department_bp)
     app.register_blueprint(branch_bp)
@@ -59,6 +61,7 @@ def create_app():
     app.register_blueprint(auth_bp)
     app.register_blueprint(announcement_bp)
     app.register_blueprint(shift_bp)
+    app.register_blueprint(designation_bp)
 
 
     return app

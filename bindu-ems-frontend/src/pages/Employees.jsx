@@ -42,7 +42,9 @@ export default function Employees() {
   useEffect(() => { load(); }, []);
 
   const departments = useMemo(() => {
-    const set = new Set(items.map((e) => e.department).filter(Boolean));
+    const set = new Set(
+  items.map((e) => e.department_name).filter(Boolean)
+);
     return Array.from(set).sort();
   }, [items]);
 
@@ -55,9 +57,10 @@ export default function Employees() {
         String(e.employee_code ?? "").toLowerCase().includes(q) ||
         String(e.employee_id ?? "").toLowerCase().includes(q) ||
         String(e.email ?? "").toLowerCase().includes(q) ||
-        String(e.department ?? "").toLowerCase().includes(q)
+        String(e.department_name ?? "").toLowerCase().includes(q)||
         String(e.designation ?? "").toLowerCase().includes(q);
-      const matchesD = dept === "all" || e.department === dept;
+      const matchesD =
+  dept === "all" || e.department_name === dept;
       const matchesS = status === "all" || String(e.status).toLowerCase() === status.toLowerCase();
       return matchesQ && matchesD && matchesS;
     });
@@ -166,13 +169,10 @@ export default function Employees() {
                         </div>
                       </div>
                     </td>
-                    <td className="px-5 py-3">
-                    <div><p className="font-medium text-slate-700">{e.department_name || "—"}</p>
-                      <p className="text-xs text-slate-500">Joined {formatDate(e.joined_date ?? e.joined ?? e.created_at)}</p>
-                      </div>
+                    <td className="px-5 py-3"><p className="font-medium text-slate-700">{e.department_name || "—"}</p>
                     </td>
                     <td className="px-5 py-3 text-slate-700">{e.designation ?? "—"}</td>
-                    <p className="text-slate-600">{e.joining_date ? formatDate(e.joining_date) : "—"}</p>
+                    <td className="px-5 py-3 text-slate-600">{e.joining_date? formatDate(e.joining_date): "—"}</td>
                     <td className="px-5 py-3"><StatusBadge status={e.status ?? "Active"} /></td>
                     <td className="px-5 py-3">
                       <div className="flex items-center justify-end gap-1">

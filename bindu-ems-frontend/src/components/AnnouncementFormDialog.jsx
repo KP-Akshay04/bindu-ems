@@ -16,6 +16,9 @@ export default function AnnouncementFormDialog({
     onSubmit({
       title,
       message,
+      department_id: form.department_id
+  ? Number(form.department_id)
+  : null,
     });
 
     setTitle("");

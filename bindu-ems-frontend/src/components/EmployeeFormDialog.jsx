@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { getShifts } from "../services/shiftService";
 import Modal from "./Modal";
+import { getDepartments } from "../services/departmentService";
 
 const EMPTY = {
   employee_code: "",
@@ -8,7 +9,7 @@ const EMPTY = {
   email: "",
   password: "",
   phone: "",
-  department: "",
+  department_id: "",
   designation: "",
   status: "Active",
   role: "Employee",
@@ -20,12 +21,16 @@ export default function EmployeeFormDialog({ open, onClose, onSubmit, initial, l
   const isEdit = Boolean(initial?.employee_id);
 
   const [shifts, setShifts] = useState([]);
-
+  const [departments, setDepartments] = useState([]);
 useEffect(() => {
   const loadShifts = async () => {
     try {
       const res = await getShifts();
       setShifts(res.data);
+
+      const deptRes = await getDepartments();
+setDepartments(deptRes.data);
+
     } catch (err) {
       console.error(err);
     }
@@ -45,7 +50,7 @@ useEffect(() => {
         designation: initial?.designation ?? "",
         role: initial?.role ?? "Employee",
         shift_id: initial?.shift_id ?? "",
-        department: initial?.department ?? "",
+        department_id: initial?.department_id ?? "",
         status: initial?.status ?? "Active",
       });
     }
@@ -88,11 +93,40 @@ useEffect(() => {
           </div>
           <div>
             <label className="label">Department</label>
-            <input className="input" value={form.department} onChange={update("department")} placeholder="Production" />
+
+<select
+  className="input"
+  value={form.department_id}
+  onChange={update("department_id")}
+>
+  <option value="">Select Department</option>
+
+  {departments.map((dept) => (
+    <option
+      key={dept.department_id}
+      value={dept.department_id}
+    >
+      {dept.department_name}
+    </option>
+  ))}
+</select>
+              <option value="">Select Department</option>
+              {departments.map((dept) => (
+                <option key={dept.department_id} value={dept.department_id}>
+                  {dept.department_name}
+                </option>
+              ))}
           </div>
           <div>
             <label className="label">Designation</label>
-            <input className="input" value={form.designation} onChange={update("designation")} placeholder="Plant Supervisor" />
+            <select className="input" value={form.designation} onChange={update("designation")}>
+              <option value="">Select Designation</option>
+              {designations.map((designation) => (
+                <option key={designation.designation_id} value={designation.designation_id}>
+                  {designation.designation_name}
+                </option>
+              ))}
+            </select>
           </div>
           <div>
             <label className="label">Status</label>
