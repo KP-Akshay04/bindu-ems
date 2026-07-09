@@ -62,11 +62,16 @@ setDepartments(deptRes.data);
   e.preventDefault();
 
   onSubmit?.({
-    ...form,
-    shift_id: form.shift_id
-      ? Number(form.shift_id)
-      : null,
-  });
+  ...form,
+
+  department_id: form.department_id
+    ? Number(form.department_id)
+    : null,
+
+  shift_id: form.shift_id
+    ? Number(form.shift_id)
+    : null,
+});
 };
 
   return (
@@ -110,12 +115,7 @@ setDepartments(deptRes.data);
     </option>
   ))}
 </select>
-              <option value="">Select Department</option>
-              {departments.map((dept) => (
-                <option key={dept.department_id} value={dept.department_id}>
-                  {dept.department_name}
-                </option>
-              ))}
+              
           </div>
           <div>
             <label className="label">Designation</label>
