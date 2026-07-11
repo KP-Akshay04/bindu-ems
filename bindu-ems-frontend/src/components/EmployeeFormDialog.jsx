@@ -2,7 +2,8 @@ import { useEffect, useState } from "react";
 import { getShifts } from "../services/shiftService";
 import Modal from "./Modal";
 import { getDepartments } from "../services/departmentService";
-
+import MasterFormDialog from "./MasterFormDialog";
+import { Plus } from "lucide-react";
 const EMPTY = {
   employee_code: "",
   full_name: "",
@@ -22,6 +23,7 @@ export default function EmployeeFormDialog({ open, onClose, onSubmit, initial, l
 
   const [shifts, setShifts] = useState([]);
   const [departments, setDepartments] = useState([]);
+  const [departmentDialogOpen, setDepartmentDialogOpen] = useState(false);
 useEffect(() => {
   const loadShifts = async () => {
     try {
@@ -97,26 +99,38 @@ setDepartments(deptRes.data);
             <input className="input" value={form.phone} onChange={update("phone")} placeholder="+91 98765 10000" />
           </div>
           <div>
-            <label className="label">Department</label>
+  <label className="label">Department</label>
 
-<select
-  className="input"
-  value={form.department_id}
-  onChange={update("department_id")}
->
-  <option value="">Select Department</option>
+  <div className="flex gap-2">
 
-  {departments.map((dept) => (
-    <option
-      key={dept.department_id}
-      value={dept.department_id}
+    <select
+      className="input flex-1"
+      value={form.department_id}
+      onChange={update("department_id")}
     >
-      {dept.department_name}
-    </option>
-  ))}
-</select>
-              
-          </div>
+      <option value="">Select Department</option>
+
+      {departments.map((dept) => (
+        <option
+          key={dept.department_id}
+          value={dept.department_id}
+        >
+          {dept.department_name}
+        </option>
+      ))}
+
+    </select>
+
+    <button
+  type="button"
+  className="btn-primary px-3"
+  onClick={() => setDepartmentDialogOpen(true)}
+>
+  <Plus className="w-4 h-4" />
+</button>
+
+  </div>
+</div>
           <div>
             <label className="label">Status</label>
             <select className="input" value={form.status} onChange={update("status")}>
@@ -194,6 +208,12 @@ setDepartments(deptRes.data);
         </div>
 
       </form>
+
+      <MasterFormDialog
+    open={departmentDialogOpen}
+    onClose={() => setDepartmentDialogOpen(false)}
+/>
+
     </Modal>
   );
 }

@@ -51,8 +51,9 @@ class Employee(db.Model):
     db.ForeignKey("shifts.shift_id")
     )
 
-    designation = db.Column(
-        db.String(100)
+    designation_id = db.Column(
+    db.Integer,
+    db.ForeignKey("designations.designation_id")
     )
 
     role = db.Column(
