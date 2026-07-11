@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { getShifts } from "../services/shiftService";
 import Modal from "./Modal";
 import { getDepartments } from "../services/departmentService";
-import MasterFormDialog from "./MasterFormDialog";
 import { Plus } from "lucide-react";
 const EMPTY = {
   employee_code: "",
@@ -23,7 +22,6 @@ export default function EmployeeFormDialog({ open, onClose, onSubmit, initial, l
 
   const [shifts, setShifts] = useState([]);
   const [departments, setDepartments] = useState([]);
-  const [departmentDialogOpen, setDepartmentDialogOpen] = useState(false);
 useEffect(() => {
   const loadShifts = async () => {
     try {
@@ -208,11 +206,6 @@ setDepartments(deptRes.data);
         </div>
 
       </form>
-
-      <MasterFormDialog
-    open={departmentDialogOpen}
-    onClose={() => setDepartmentDialogOpen(false)}
-/>
 
     </Modal>
   );
