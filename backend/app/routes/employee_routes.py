@@ -9,6 +9,7 @@ from flask import send_from_directory
 from app.models.shift import Shift
 from app.models.department import Department
 from app.models.branch import Branch
+from datetime import datetime
 
 employee_bp = Blueprint(
     "employee_bp",
@@ -124,6 +125,11 @@ def update_employee(id):
         employee.phone
     )
 
+    employee.department_id = data.get(
+    "department_id",
+    employee.department_id
+    )
+    
     employee.designation = data.get(
         "designation",
         employee.designation
@@ -142,6 +148,11 @@ def update_employee(id):
     employee.basic_salary = data.get(
         "basic_salary",
         employee.basic_salary
+    )
+
+    employee.branch_id = data.get(
+    "branch_id",
+    employee.branch_id
     )
 
     db.session.commit()
