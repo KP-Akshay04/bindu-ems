@@ -1,6 +1,7 @@
 from flask import Blueprint, request, jsonify
 
 from app.models.employee import Employee
+from app.models.designation import Designation
 from app.utils.security import verify_password
 
 auth_bp = Blueprint(
@@ -37,7 +38,7 @@ def login():
             "message": "Invalid Password"
         }), 401
 
-    employee_role = str(employee.role).lower()
+    employee_role = str(employee.role).strip().lower()
 
     # Super Admin can access every portal
     if employee_role in [
@@ -53,42 +54,54 @@ def login():
         "hr_admin"
     ]:
         return jsonify({
-
             "success": False,
             "message": "Only HR can log in through the HR portal."
-    }), 403
+        }), 403
 
     elif portal == "employee" and employee_role != "employee":
         return jsonify({
-
-        "success": False,
-        "message": "Only Employees can log in through the Employee portal."
-    }), 403
+            "success": False,
+            "message": "Only Employees can log in through the Employee portal."
+        }), 403
 
     elif portal not in ["admin", "hr", "employee"]:
         return jsonify({
-            
-        "success": False,
-        "message": "Invalid login portal."
-    }), 400
+            "success": False,
+            "message": "Invalid login portal."
+        }), 400
+
+    designation = None
+
+    if employee.designation_id:
+        designation = Designation.query.get(employee.designation_id)
 
     return jsonify({
         "success": True,
+
         "employee_id": employee.employee_id,
         "employee_code": employee.employee_code,
+
         "full_name": employee.full_name,
         "email": employee.email,
-        "designation": employee.designation,
-        "role": (
-    "HR"
-    if str(employee.role).strip().lower() in ["hr", "hr admin", "hr_admin"]
-    else (
-        "Super Admin"
-        if str(employee.role).strip().lower() in ["super admin", "admin", "super_admin"]
-        else "Employee"
-    )
-),
         "phone": employee.phone,
+
+        "branch_id": employee.branch_id,
+        "department_id": employee.department_id,
+        "designation_id": employee.designation_id,
+        "designation_name": designation.designation_name if designation else None,
+
+        "joining_date": str(employee.joining_date) if employee.joining_date else None,
+
+        "role": (
+            "HR"
+            if employee_role in ["hr", "hr admin", "hr_admin"]
+            else (
+                "Super Admin"
+                if employee_role in ["super admin", "admin", "super_admin"]
+                else "Employee"
+            )
+        ),
+
         "status": employee.status,
-        "employee_photo": employee.employee_photo,
-    })
+        "employee_photo": employee.employee_photo
+    }), 200

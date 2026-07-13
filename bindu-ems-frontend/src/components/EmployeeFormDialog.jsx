@@ -3,6 +3,7 @@ import { getShifts } from "../services/shiftService";
 import Modal from "./Modal";
 import { getDepartments } from "../services/departmentService";
 import { Plus } from "lucide-react";
+import { getDesignations } from "../services/designationService";
 const EMPTY = {
   employee_code: "",
   full_name: "",
@@ -22,6 +23,7 @@ export default function EmployeeFormDialog({ open, onClose, onSubmit, initial, l
 
   const [shifts, setShifts] = useState([]);
   const [departments, setDepartments] = useState([]);
+  const [designations, setDesignations] = useState([]);
 useEffect(() => {
   const loadShifts = async () => {
     try {

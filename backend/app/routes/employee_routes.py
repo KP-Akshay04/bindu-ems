@@ -10,6 +10,7 @@ from app.models.shift import Shift
 from app.models.department import Department
 from app.models.branch import Branch
 from datetime import datetime
+from app.models.designation import Designation
 
 employee_bp = Blueprint(
     "employee_bp",
@@ -72,6 +73,11 @@ def get_employees():
         if emp.branch_id:
             branch = Branch.query.get(emp.branch_id)
 
+        designation = None
+
+        if emp.designation_id:
+            designation = Designation.query.get(emp.designation_id)
+
         result.append({
             "employee_id": emp.employee_id,
             "employee_code": emp.employee_code,
@@ -86,6 +92,9 @@ def get_employees():
             "department_id": emp.department_id,
             "department_name": department.department_name if department else None,
 
+            "designation_id": emp.designation_id,
+            "designation_name": designation.designation_name if designation else None,
+
             "joining_date": str(emp.joining_date) if emp.joining_date else None,
 
             "shift_id": emp.shift_id,
@@ -93,8 +102,9 @@ def get_employees():
             "shift_start": str(shift.start_time) if shift else None,
             "shift_end": str(shift.end_time) if shift else None,
             "grace_minutes": shift.grace_minutes if shift else None,
+            "designation_id": emp.designation_id,
+            "designation_name": designation.designation_name if designation else None,
 
-            "designation": emp.designation,
             "role": emp.role,
             "basic_salary": emp.basic_salary,
             "leave_balance": emp.leave_balance,
