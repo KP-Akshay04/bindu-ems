@@ -1,0 +1,67 @@
+from flask import Flask, app
+from flask_sqlalchemy import SQLAlchemy
+from flask_migrate import Migrate
+from flask_cors import CORS
+
+db = SQLAlchemy()
+migrate = Migrate()
+
+def create_app():
+    app = Flask(__name__)
+
+    # Allow Vite frontend
+    CORS(
+    app,
+    resources={
+        r"/api/*": {
+            "origins": [
+                "http://localhost:5173",
+                "http://127.0.0.1:5173"
+            ]
+        }
+    },
+    supports_credentials=True
+)
+
+    app.config.from_object("config.Config")
+
+    db.init_app(app)
+    migrate.init_app(app, db)
+
+    from app.models.branch import Branch
+    from app.models.employee import Employee
+    from app.models.department import Department
+    from app.models.leave_request import LeaveRequest
+    from app.models.payroll import Payroll
+    from app.models.attendance import Attendance
+    from app.models.attendance_log import AttendanceLog
+    from app.models.shift import Shift
+    from app.routes.shift_routes import shift_bp
+
+    from app.routes.branch_routes import branch_bp
+    from app.routes.department_routes import department_bp
+    from app.routes.employee_routes import employee_bp
+    from app.routes.leave_routes import leave_bp
+    from app.routes.payroll_routes import payroll_bp
+    from app.routes.attendance_routes import attendance_bp
+    from app.routes.dashboard_routes import dashboard_bp
+    from app.routes.auth_routes import auth_bp
+    from app.models.announcement import Announcement
+    from app.routes.announcement_routes import announcement_bp
+    from app.models.designation import Designation
+    from app.routes.designation_routes import designation_bp
+
+    app.register_blueprint(department_bp)
+    app.register_blueprint(branch_bp)
+    app.register_blueprint(employee_bp)
+    app.register_blueprint(leave_bp)
+    app.register_blueprint(payroll_bp)
+    app.register_blueprint(attendance_bp)
+    app.register_blueprint(dashboard_bp)
+    app.register_blueprint(auth_bp)
+    app.register_blueprint(announcement_bp)
+    app.register_blueprint(shift_bp)
+    app.register_blueprint(designation_bp)
+
+
+    return app
