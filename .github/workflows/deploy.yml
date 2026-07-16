@@ -19,16 +19,30 @@ jobs:
           script: |
             set -e
 
+            echo "========== Updating Project =========="
+
             cd ~/bindu-ems
 
             git fetch --all
             git reset --hard origin/main
 
+            echo "========== Backend =========="
+
             cd backend
+
             source venv/bin/activate
+
             pip install -r requirements.txt
 
+            export FLASK_APP=run.py
+
+            echo "Running database migrations..."
+            flask db upgrade
+
+            echo "Restarting Gunicorn..."
             sudo systemctl restart bindu
+
+            echo "========== Frontend =========="
 
             cd ../bindu-ems-frontend
 
@@ -38,7 +52,11 @@ jobs:
 
             /usr/bin/npm run build
 
+            echo "========== Deploying Frontend =========="
+
             sudo rm -rf /var/www/bindu/*
             sudo cp -r dist/* /var/www/bindu/
 
             sudo systemctl reload nginx
+
+            echo "========== Deployment Completed =========="
