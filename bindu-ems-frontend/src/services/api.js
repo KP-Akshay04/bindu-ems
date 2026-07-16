@@ -68,8 +68,12 @@ export const attendanceCheckOut = (employeeId) =>
 export const attendanceLogin = attendanceCheckIn;
 
 // ---- LEAVES ----
+
 export const fetchLeaves = (params = {}) =>
   api.get("/api/leaves", { params }).then((r) => r.data);
+
+export const fetchLeaveById = (id) =>
+  api.get(`/api/leaves/${id}`).then((r) => r.data);
 
 export const createLeave = (payload) =>
   api.post("/api/leaves/apply", payload).then((r) => r.data);
@@ -79,6 +83,21 @@ export const approveLeave = (id) =>
 
 export const rejectLeave = (id) =>
   api.put(`/api/leaves/${id}/reject`).then((r) => r.data);
+
+export const cancelLeave = (id) =>
+  api.put(`/api/leaves/${id}/cancel`).then((r) => r.data);
+
+export const fetchLeaveSummary = () =>
+  api.get("/api/leaves/summary").then((r) => r.data);
+
+export const fetchLeaveBalance = (employeeId) =>
+  api.get(`/api/leaves/balance/${employeeId}`).then((r) => r.data);
+
+export const fetchLeaveTypes = () =>
+  api.get("/api/leaves/types").then((r) => r.data);
+
+export const searchLeaves = (params = {}) =>
+  api.get("/api/leaves/search", { params }).then((r) => r.data);
 
 // ---- PAYROLL ----
 export const fetchPayroll = (params = {}) =>

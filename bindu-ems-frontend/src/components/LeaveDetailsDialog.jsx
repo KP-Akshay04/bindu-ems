@@ -136,7 +136,7 @@ export default function LeaveDetailsDialog({
               <InfoCard
                 icon={<Clock3 className="w-5 h-5 text-brand-600" />}
                 label="Duration"
-                value={`${leave.days ?? 0} Day${leave.days > 1 ? "s" : ""}`}
+                value={`${leave.duration ?? 0} Day${leave.duration > 1 ? "s" : ""}`}
               />
 
             </div>
@@ -160,13 +160,13 @@ export default function LeaveDetailsDialog({
               <InfoCard
                 icon={<Calendar className="w-5 h-5 text-brand-600" />}
                 label="From Date"
-                value={formatDate(leave.from_date)}
+                value={formatDate(leave.start_date)}
               />
 
               <InfoCard
                 icon={<Calendar className="w-5 h-5 text-brand-600" />}
                 label="To Date"
-                value={formatDate(leave.to_date)}
+                value={formatDate(leave.end_date)}
               />
 
               <InfoCard
@@ -223,14 +223,14 @@ export default function LeaveDetailsDialog({
               <div className="flex gap-3">
 
                 <button
-                  onClick={() => onApprove?.(leave)}
+                  onClick={() => onApprove?.(leave.leave_id)}
                   className="px-5 py-2 rounded-xl bg-emerald-600 text-white font-semibold hover:bg-emerald-700 transition"
                 >
                   Approve
                 </button>
 
                 <button
-                  onClick={() => onReject?.(leave)}
+                  onClick={() => onReject?.(leave.leave_id)}
                   className="px-5 py-2 rounded-xl bg-red-600 text-white font-semibold hover:bg-red-700 transition"
                 >
                   Reject
