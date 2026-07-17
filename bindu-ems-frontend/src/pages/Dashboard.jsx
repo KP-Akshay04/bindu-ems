@@ -30,6 +30,7 @@ import ErrorState from "../components/ErrorState";
 import {
   fetchEmployees,
   fetchAttendance,
+  fetchTodayAttendance,
   fetchLeaves,
   fetchPayroll,
   fetchAnnouncements,
@@ -81,7 +82,7 @@ export default function Dashboard() {
         announcementsData,
       ] = await Promise.all([
         fetchEmployees(),
-        fetchAttendance(),
+        fetchTodayAttendance(user.employee_id),
         fetchLeaves(),
         fetchPayroll(),
         fetchAnnouncements(),
@@ -106,29 +107,31 @@ const today =
   String(now.getDate()).padStart(2, "0");
       
 
-      const record = attendanceList.find(
-        (a) =>
-          String(a.employee_id) === String(user?.employee_id) &&
-          String(a.attendance_date ?? "").slice(0, 10) === today
-      );
-      console.log("Today's Date:", today);
-      console.log("Today's Record:", record);
+      // Restore today's attendance directly from backend
+const todayData = await fetchTodayAttendance(user.employee_id);
 
-      if (record) {
+console.log("Today's Attendance API:", todayData);
 
-  setTodayAttendance(record);
+if (todayData.logged_in && todayData.attendance) {
 
+  setTodayAttendance(todayData.attendance);
 
-  const status = String(record.status || "").trim().toLowerCase();
+  const status = String(
+    todayData.attendance.status || ""
+  ).trim().toLowerCase();
 
   setWorkStatus(
     status === "lunch break"
       ? "Lunch Break"
       : "Working"
   );
+
 } else {
-        setTodayAttendance(null);
-      }
+
+  setTodayAttendance(null);
+  setWorkStatus("Working");
+
+}
 
       setLeaves(extractList(leavesData, "leaves"));
       setPayroll(extractList(payrollData, "payroll"));

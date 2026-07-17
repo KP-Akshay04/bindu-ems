@@ -52,6 +52,9 @@ export const deactivateEmployee = (id) =>
 export const fetchAttendance = (params = {}) =>
   api.get("/api/attendance", { params }).then((r) => r.data);
 
+export const fetchTodayAttendance = (employeeId) =>
+  api.get(`/api/attendance/today/${employeeId}`).then((r) => r.data);
+
 export const attendanceCheckIn = (employeeId) =>
   api.post("/api/attendance/login", { employee_id: employeeId }).then((r) => r.data);
 
