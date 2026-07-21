@@ -75,62 +75,35 @@ export default function Dashboard() {
     setError(null);
     try {
       const [
-        employeesData,
-        attendanceData,
-        leavesData,
-        payrollData,
-        announcementsData,
-      ] = await Promise.all([
-        fetchEmployees(),
-        fetchTodayAttendance(user.employee_id),
-        fetchLeaves(),
-        fetchPayroll(),
-        fetchAnnouncements(),
-      ]);
+  employeesData,
+  attendanceData,
+  leavesData,
+  payrollData,
+  announcementsData,
+  todayData,
+] = await Promise.all([
+  fetchEmployees(),
+  fetchAttendance(),
+  fetchLeaves(),
+  fetchPayroll(),
+  fetchAnnouncements(),
+  fetchTodayAttendance(user.employee_id),
+]);
 
       setEmployees(extractList(employeesData, "employees"));
-
-      const attendanceList = extractList(attendanceData, "attendance");
-      console.log("Attendance List:", attendanceList);
-      console.log("Current Employee:", user.employee_id);
-
-      setAttendance(attendanceList);
-
-      // Find today's attendance for the logged-in employee
-      const now = new Date();
-
-const today =
-  now.getFullYear() +
-  "-" +
-  String(now.getMonth() + 1).padStart(2, "0") +
-  "-" +
-  String(now.getDate()).padStart(2, "0");
-      
-
-      // Restore today's attendance directly from backend
-const todayData = await fetchTodayAttendance(user.employee_id);
-
-console.log("Today's Attendance API:", todayData);
+      setAttendance(extractList(attendanceData, "attendance"));
 
 if (todayData.logged_in && todayData.attendance) {
-
   setTodayAttendance(todayData.attendance);
 
-  const status = String(
-    todayData.attendance.status || ""
-  ).trim().toLowerCase();
-
   setWorkStatus(
-    status === "lunch break"
+    todayData.attendance.status === "Lunch Break"
       ? "Lunch Break"
       : "Working"
   );
-
 } else {
-
   setTodayAttendance(null);
   setWorkStatus("Working");
-
 }
 
       setLeaves(extractList(leavesData, "leaves"));
@@ -204,30 +177,56 @@ useEffect(() => {
   let lunchInterval;
 
   // Shift Timer
-  if (todayAttendance.logout_time) {
-    const hours = Number(todayAttendance.working_hours || 0);
+if (todayAttendance.logout_time) {
+  const hours = Number(todayAttendance.working_hours || 0);
 
-    setShiftTimer(
-      formatTimer(Math.floor(hours * 3600))
-    );
-  } else {
-    shiftInterval = setInterval(() => {
-      if (!todayAttendance.login_time) return;
+  setShiftTimer(
+    formatTimer(Math.floor(hours * 3600))
+  );
+} else {
+  shiftInterval = setInterval(() => {
 
-      const login = new Date(todayAttendance.login_time);
+    if (!todayAttendance.login_time) return;
 
-      if (!isNaN(login.getTime())) {
-        setShiftTimer(
-          formatTimer(
-            Math.floor((Date.now() - login.getTime()) / 1000)
-          )
+    const login = new Date(todayAttendance.login_time);
+
+    if (isNaN(login.getTime())) return;
+
+    let workedSeconds =
+      Math.floor((Date.now() - login.getTime()) / 1000);
+
+    // Deduct completed lunch
+    workedSeconds -=
+      Number(todayAttendance.lunch_minutes || 0) * 60;
+
+    // Deduct current lunch if employee is still on lunch
+    if (
+      todayAttendance.status === "Lunch Break" &&
+      todayAttendance.lunch_start_time
+    ) {
+      const lunchStart = new Date(
+        todayAttendance.lunch_start_time
+      );
+
+      if (!isNaN(lunchStart.getTime())) {
+        workedSeconds -= Math.floor(
+          (Date.now() - lunchStart.getTime()) / 1000
         );
       }
-    }, 1000);
-  }
+    }
+
+    setShiftTimer(
+      formatTimer(Math.max(0, workedSeconds))
+    );
+
+  }, 1000);
+}
 
   // Lunch Timer
-  if (workStatus === "Lunch Break" && todayAttendance.lunch_start_time) {
+  if (
+  todayAttendance?.status === "Lunch Break" &&
+  todayAttendance?.lunch_start_time
+) {
     lunchInterval = setInterval(() => {
       const lunchStart = new Date(
         todayAttendance.lunch_start_time
@@ -255,7 +254,7 @@ useEffect(() => {
     if (shiftInterval) clearInterval(shiftInterval);
     if (lunchInterval) clearInterval(lunchInterval);
   };
-}, [todayAttendance, workStatus]);
+}, [todayAttendance]);
 
   // ---- DERIVED ----
   const stats = useMemo(() => {
@@ -542,7 +541,7 @@ return {
         onChange={(e) =>
           handleStatusChange(e.target.value)
         }
-        disabled={statusBusy || !todayAttendance}
+        disabled={statusBusy ||!todayAttendance ||!!todayAttendance.logout_time}
         className="input w-48"
       >
         <option value="Working">

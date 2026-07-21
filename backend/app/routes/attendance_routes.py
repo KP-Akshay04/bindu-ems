@@ -8,6 +8,7 @@ from app.models.employee import Employee
 from app.models.shift import Shift
 
 
+
 attendance_bp = Blueprint(
     "attendance_bp",
     __name__
@@ -118,6 +119,11 @@ def lunch_out():
         return jsonify({
             "message": "Attendance record not found"
         }), 404
+    
+    if attendance.logout_time:
+        return jsonify({
+            "message": "Cannot start lunch after logout."
+        }), 400
 
     if attendance.lunch_end_time:
         return jsonify({
@@ -138,11 +144,20 @@ def lunch_out():
     db.session.commit()
 
     return jsonify({
-        "message": "Lunch break started",
-        "lunch_start_time": str(
-            attendance.lunch_start_time
-        )
-    })
+    "message": "Lunch break started",
+    "attendance": {
+        "attendance_id": attendance.attendance_id,
+        "employee_id": attendance.employee_id,
+        "attendance_date": str(attendance.attendance_date),
+        "login_time": str(attendance.login_time) if attendance.login_time else None,
+        "logout_time": str(attendance.logout_time) if attendance.logout_time else None,
+        "working_hours": attendance.working_hours,
+        "lunch_minutes": attendance.lunch_minutes,
+        "lunch_start_time": str(attendance.lunch_start_time) if attendance.lunch_start_time else None,
+        "lunch_end_time": str(attendance.lunch_end_time) if attendance.lunch_end_time else None,
+        "status": attendance.status,
+    }
+})
 
 @attendance_bp.route(
     "/api/attendance/lunch-in",
@@ -167,6 +182,11 @@ def lunch_in():
         return jsonify({
             "message": "Attendance record not found"
         }), 404
+    
+    if attendance.logout_time:
+        return jsonify({
+            "message": "Cannot return from lunch after logout."
+        }), 400
 
     if not attendance.lunch_start_time:
         return jsonify({
@@ -198,12 +218,20 @@ def lunch_in():
     db.session.commit()
 
     return jsonify({
-        "message": "Returned from lunch",
+    "message": "Returned from lunch",
+    "attendance": {
+        "attendance_id": attendance.attendance_id,
+        "employee_id": attendance.employee_id,
+        "attendance_date": str(attendance.attendance_date),
+        "login_time": str(attendance.login_time) if attendance.login_time else None,
+        "logout_time": str(attendance.logout_time) if attendance.logout_time else None,
+        "working_hours": attendance.working_hours,
         "lunch_minutes": attendance.lunch_minutes,
-        "lunch_end_time": str(
-            attendance.lunch_end_time
-        )
-    })
+        "lunch_start_time": str(attendance.lunch_start_time) if attendance.lunch_start_time else None,
+        "lunch_end_time": str(attendance.lunch_end_time) if attendance.lunch_end_time else None,
+        "status": attendance.status,
+    }
+})
 
 
 @attendance_bp.route(
@@ -288,10 +316,21 @@ def employee_logout(employee_id):
 )
 def get_today_attendance(employee_id):
 
+
     attendance = Attendance.query.filter_by(
         employee_id=employee_id,
         attendance_date=date.today()
     ).first()
+    
+    print("DATABASE URI:", db.engine.url)
+    print("TODAY:", date.today())
+
+    print("=== DEBUG ===")
+    print("Attendance ID:", attendance.attendance_id if attendance else None)
+    print("Attendance Date:", attendance.attendance_date if attendance else None)
+    print("Status:", attendance.status if attendance else None)
+    print("Login:", attendance.login_time if attendance else None)
+    print("Logout:", attendance.logout_time if attendance else None)
 
     if not attendance:
         return jsonify({
@@ -308,7 +347,15 @@ def get_today_attendance(employee_id):
 
     return jsonify({
 
-        "logged_in": True,
+    "logged_in" = (
+        attendance is not None and
+        attendance.logout_time is None
+)
+
+return jsonify({
+    "logged_in": logged_in,
+    "attendance": { ... }
+})
 
         "attendance": {
 
@@ -364,5 +411,53 @@ def get_today_attendance(employee_id):
 
     })
 
-    return jsonify(result)
+@attendance_bp.route(
+    "/api/attendance",
+    methods=["GET"]
+)
+def get_attendance():
 
+    employee_id = request.args.get("employee_id", type=int)
+
+    query = Attendance.query
+
+    if employee_id:
+        query = query.filter(
+            Attendance.employee_id == employee_id
+        )
+
+    records = query.order_by(
+        Attendance.attendance_date.desc(),
+        Attendance.login_time.desc()
+    ).all()
+
+    attendance = []
+
+    for record in records:
+
+        employee = Employee.query.get(record.employee_id)
+
+        shift = None
+        if employee and employee.shift_id:
+            shift = Shift.query.get(employee.shift_id)
+
+        attendance.append({
+            "attendance_id": record.attendance_id,
+            "employee_id": record.employee_id,
+            "employee_name": employee.full_name if employee else None,
+            "employee_code": employee.employee_code if employee else None,
+            "role": employee.role if employee else None,
+            "shift_name": shift.shift_name if shift else None,
+            "attendance_date": str(record.attendance_date),
+            "login_time": str(record.login_time) if record.login_time else None,
+            "logout_time": str(record.logout_time) if record.logout_time else None,
+            "working_hours": record.working_hours,
+            "lunch_minutes": record.lunch_minutes,
+            "lunch_start_time": str(record.lunch_start_time) if record.lunch_start_time else None,
+            "lunch_end_time": str(record.lunch_end_time) if record.lunch_end_time else None,
+            "status": record.status,
+        })
+
+    return jsonify({
+        "attendance": attendance
+    })

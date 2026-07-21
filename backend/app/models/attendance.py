@@ -44,13 +44,35 @@ class Attendance(db.Model):
     )
 
     lunch_end_time = db.Column(
-    db.DateTime,
-    nullable=True
+        db.DateTime,
+        nullable=True
     )
 
     status = db.Column(
         db.String(20),
         default="Present"
+    )
+
+    # ---------------- GPS ----------------
+
+    login_latitude = db.Column(
+        db.Float,
+        nullable=True
+    )
+
+    login_longitude = db.Column(
+        db.Float,
+        nullable=True
+    )
+
+    login_address = db.Column(
+        db.String(255),
+        nullable=True
+    )
+
+    distance_from_branch = db.Column(
+        db.Float,
+        nullable=True
     )
 
     def __repr__(self):
