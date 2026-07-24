@@ -20,26 +20,50 @@ export const formatDate = (input) => {
 
 export const formatTime = (input) => {
   if (!input) return "—";
+
   // accepts "HH:MM:SS", ISO datetime, or "HH:MM"
   if (typeof input === "string" && /^\d{1,2}:\d{2}/.test(input)) {
-    const [h, m] = input.split(":");
+    const parts = input.split(":");
     const date = new Date();
-    date.setHours(parseInt(h, 10), parseInt(m, 10), 0, 0);
-    return date.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" });
+
+    date.setHours(
+      parseInt(parts[0], 10),
+      parseInt(parts[1], 10),
+      parseInt(parts[2] || 0, 10),
+      0
+    );
+
+    return date.toLocaleTimeString("en-IN", {
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+      hour12: true,
+    });
   }
+
   const d = new Date(input);
+
   if (isNaN(d.getTime())) return String(input);
-  return d.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" });
+
+  return d.toLocaleTimeString("en-IN", {
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: true,
+  });
 };
 
-export const initials = (name = "") =>
-  name
-    .split(" ")
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((p) => p[0])
-    .join("")
-    .toUpperCase();
+export const formatDuration = (seconds = 0) => {
+  const total = Math.max(0, Number(seconds) || 0);
+
+  const hrs = Math.floor(total / 3600);
+  const mins = Math.floor((total % 3600) / 60);
+  const secs = total % 60;
+
+  return [hrs, mins, secs]
+    .map((v) => String(v).padStart(2, "0"))
+    .join(":");
+};
 
 /**
  * Defensive array extractor for Flask responses that may return:
@@ -57,4 +81,13 @@ export const extractList = (res, ...keys) => {
   if (Array.isArray(res.data)) return res.data;
   if (Array.isArray(res.results)) return res.results;
   return [];
+};
+
+export const initials = (name = "") => {
+  return String(name)
+    .trim()
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((part) => part.charAt(0).toUpperCase())
+    .join("");
 };

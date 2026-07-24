@@ -167,8 +167,8 @@ useEffect(() => {
           String(p.employee_name ?? p.name ?? "").toLowerCase().includes(q) ||
           String(p.employee_code ?? "").toLowerCase().includes(q) ||
           String(p.employee_id ?? "").toLowerCase().includes(q) ||
-          String(p.department ?? "").toLowerCase().includes(q) ||
-          String(p.designation ?? "").toLowerCase().includes(q) ||
+          String(p.department_name ?? "").toLowerCase().includes(q) ||
+          String(p.designation_name ?? "").toLowerCase().includes(q) ||
           String(p.pay_date ?? "").toLowerCase().includes(q)) &&
         (status === "all" || String(p.status).toLowerCase() === status.toLowerCase())
     );
@@ -514,11 +514,11 @@ const handleCreatePayroll =
       {" • "}
       {p.employee_code}
       {" • "}
-      {p.department ?? "Department"}
+      {p.department_name ?? "Department"}
     </p>
 
     <p className="text-xs text-slate-400">
-      {p.designation ?? p.role ?? "Employee"}
+      {p.designation_name ?? p.role ?? "Employee"}
     </p>
   </>
 )}
@@ -532,11 +532,11 @@ const handleCreatePayroll =
   <div>
 
     <p className="font-medium text-slate-700">
-      {p.department ?? "—"}
+      {p.department_name ?? "—"}
     </p>
 
     <p className="text-xs text-slate-500">
-      {p.designation ?? "Employee"}
+      {p.designation_name ?? "Employee"}
     </p>
 
   </div>

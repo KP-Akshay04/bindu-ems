@@ -9,6 +9,8 @@ from app.models.shift import Shift
 
 
 
+
+
 attendance_bp = Blueprint(
     "attendance_bp",
     __name__
@@ -151,8 +153,8 @@ def lunch_out():
         "attendance_date": str(attendance.attendance_date),
         "login_time": str(attendance.login_time) if attendance.login_time else None,
         "logout_time": str(attendance.logout_time) if attendance.logout_time else None,
-        "working_hours": attendance.working_hours,
-        "lunch_minutes": attendance.lunch_minutes,
+        "working_seconds": attendance.working_seconds,
+        "lunch_seconds": attendance.lunch_seconds,
         "lunch_start_time": str(attendance.lunch_start_time) if attendance.lunch_start_time else None,
         "lunch_end_time": str(attendance.lunch_end_time) if attendance.lunch_end_time else None,
         "status": attendance.status,
@@ -195,38 +197,38 @@ def lunch_in():
 
     attendance.lunch_end_time = datetime.now()
 
-    lunch_minutes = round(
-        (
-            attendance.lunch_end_time -
-            attendance.lunch_start_time
-        ).total_seconds() / 60
-    )
+    lunch_seconds = int(
+    (
+        attendance.lunch_end_time -
+        attendance.lunch_start_time
+    ).total_seconds()
+)
 
-    attendance.lunch_minutes = (
-        attendance.lunch_minutes or 0
-    ) + lunch_minutes
+    attendance.lunch_seconds = (
+        attendance.lunch_seconds or 0
+        ) + lunch_seconds
 
     attendance.status = "Working"
 
     log = AttendanceLog(
-        employee_id=employee_id,
-        action="LUNCH_IN",
-        timestamp=datetime.now()
-    )
+            employee_id=employee_id,
+            action="LUNCH_IN",
+            timestamp=datetime.now()
+        )
 
     db.session.add(log)
     db.session.commit()
 
     return jsonify({
-    "message": "Returned from lunch",
-    "attendance": {
+        "message": "Returned from lunch",
+        "attendance": {
         "attendance_id": attendance.attendance_id,
         "employee_id": attendance.employee_id,
         "attendance_date": str(attendance.attendance_date),
         "login_time": str(attendance.login_time) if attendance.login_time else None,
         "logout_time": str(attendance.logout_time) if attendance.logout_time else None,
-        "working_hours": attendance.working_hours,
-        "lunch_minutes": attendance.lunch_minutes,
+        "working_seconds": attendance.working_seconds,
+        "lunch_seconds": attendance.lunch_seconds,
         "lunch_start_time": str(attendance.lunch_start_time) if attendance.lunch_start_time else None,
         "lunch_end_time": str(attendance.lunch_end_time) if attendance.lunch_end_time else None,
         "status": attendance.status,
@@ -262,16 +264,24 @@ def employee_logout(employee_id):
         attendance.login_time
     )
 
+    if attendance.lunch_start_time and not attendance.lunch_end_time:
+        attendance.lunch_end_time = datetime.now()
+
+        attendance.lunch_seconds += int(
+            (
+                attendance.lunch_end_time -
+                attendance.lunch_start_time
+            ).total_seconds()
+    )
+
+
     working_seconds = max(
     0,
-    total_duration.total_seconds()
-    - ((attendance.lunch_minutes or 0) * 60)
+    int(total_duration.total_seconds()) -
+    (attendance.lunch_seconds or 0)
 )
 
-    attendance.working_hours = round(
-        working_seconds / 3600,
-        2
-    )
+    attendance.working_seconds = working_seconds
 
     employee = Employee.query.get(employee_id)
 
@@ -304,8 +314,8 @@ def employee_logout(employee_id):
 
     return jsonify({
         "message": "Logout recorded successfully",
-        "working_hours": attendance.working_hours,
-        "lunch_minutes": attendance.lunch_minutes,
+        "working_seconds": attendance.working_seconds,
+        "lunch_seconds": attendance.lunch_seconds,
         "status": attendance.status
     })
 
@@ -345,71 +355,63 @@ def get_today_attendance(employee_id):
     if employee and employee.shift_id:
         shift = Shift.query.get(employee.shift_id)
 
-    return jsonify({
-
-    "logged_in" = (
-        attendance is not None and
-        attendance.logout_time is None
+    logged_in = (
+    attendance is not None and
+    attendance.logout_time is None
 )
 
-return jsonify({
+    return jsonify({
+
     "logged_in": logged_in,
-    "attendance": { ... }
+
+    "attendance": {
+
+        "attendance_id": attendance.attendance_id,
+
+        "employee_id": attendance.employee_id,
+
+        "employee_name":
+            employee.full_name if employee else None,
+
+        "employee_code":
+            employee.employee_code if employee else None,
+
+        "role":
+            employee.role if employee else None,
+
+        "shift_name":
+            shift.shift_name if shift else None,
+
+        "attendance_date":
+            str(attendance.attendance_date),
+
+        "login_time":
+            str(attendance.login_time)
+            if attendance.login_time else None,
+
+        "logout_time":
+            str(attendance.logout_time)
+            if attendance.logout_time else None,
+
+        "working_seconds":
+            attendance.working_seconds,
+
+        "lunch_seconds":
+            attendance.lunch_seconds,
+
+        "lunch_start_time":
+            str(attendance.lunch_start_time)
+            if attendance.lunch_start_time else None,
+
+        "lunch_end_time":
+            str(attendance.lunch_end_time)
+            if attendance.lunch_end_time else None,
+
+        "status":
+            attendance.status
+    }
+
 })
-
-        "attendance": {
-
-            "attendance_id": attendance.attendance_id,
-
-            "employee_id": attendance.employee_id,
-
-            "employee_name":
-                employee.full_name if employee else None,
-
-            "employee_code":
-                employee.employee_code if employee else None,
-
-            "role":
-                employee.role if employee else None,
-
-            "shift_name":
-                shift.shift_name if shift else None,
-
-            "attendance_date":
-                str(attendance.attendance_date),
-
-            "login_time":
-                str(attendance.login_time)
-                if attendance.login_time
-                else None,
-
-            "logout_time":
-                str(attendance.logout_time)
-                if attendance.logout_time
-                else None,
-
-            "working_hours":
-                attendance.working_hours,
-
-            "lunch_minutes":
-                attendance.lunch_minutes,
-
-            "lunch_start_time":
-                str(attendance.lunch_start_time)
-                if attendance.lunch_start_time
-                else None,
-
-            "lunch_end_time":
-                str(attendance.lunch_end_time)
-                if attendance.lunch_end_time
-                else None,
-
-            "status":
-                attendance.status
-
-        }
-
-    })
 
 @attendance_bp.route(
     "/api/attendance",
@@ -451,8 +453,8 @@ def get_attendance():
             "attendance_date": str(record.attendance_date),
             "login_time": str(record.login_time) if record.login_time else None,
             "logout_time": str(record.logout_time) if record.logout_time else None,
-            "working_hours": record.working_hours,
-            "lunch_minutes": record.lunch_minutes,
+            "working_seconds": record.working_seconds,
+            "lunch_seconds": record.lunch_seconds,
             "lunch_start_time": str(record.lunch_start_time) if record.lunch_start_time else None,
             "lunch_end_time": str(record.lunch_end_time) if record.lunch_end_time else None,
             "status": record.status,

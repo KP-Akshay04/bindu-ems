@@ -28,12 +28,12 @@ class Attendance(db.Model):
         db.DateTime
     )
 
-    working_hours = db.Column(
-        db.Float,
+    working_seconds = db.Column(
+        db.Integer,
         default=0
     )
 
-    lunch_minutes = db.Column(
+    lunch_seconds = db.Column(
         db.Integer,
         default=0
     )

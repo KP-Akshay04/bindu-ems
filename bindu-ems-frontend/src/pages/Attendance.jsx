@@ -15,7 +15,7 @@ import ErrorState from "../components/ErrorState";
 import EmptyState from "../components/EmptyState";
 import StatusBadge from "../components/StatusBadge";
 import { fetchAttendance } from "../services/api";
-import { extractList, formatDate, formatTime, initials } from "../utils/format";
+import {extractList,formatDate,formatTime,formatDuration,initials,} from "../utils/format";
 import { useAuth } from "../context/AuthContext";
 
 
@@ -92,16 +92,29 @@ console.log(
       .toLowerCase()
       .replace(/\s+/g, " ");
 
-    if (["working", "logged out", "present", "checked-in"].includes(s)) {
-      c.present++;
-    } else if (s === "late") {
-      c.late++;
-    } else if (s === "absent") {
-      c.absent++;
-    } else if (["leave", "on leave"].includes(s)) {
-      c.leave++;
-    }
-  });
+    if (
+  [
+    "working",
+    "present",
+    "late",
+    "lunch break",
+    "completed",
+    "early logout",
+    "logged out",
+    "checked-in",
+  ].includes(s)
+) {
+  c.present++;
+}
+
+if (s === "late") {
+  c.late++;
+} else if (s === "absent") {
+  c.absent++;
+} else if (["leave", "on leave"].includes(s)) {
+  c.leave++;
+}
+    });
 
   return c;
 }, [todayList]);
@@ -113,9 +126,10 @@ console.log(
       if (isNaN(dt.getTime())) return;
       const idx = (dt.getDay() + 6) % 7;
       const s = String(a.status ?? "").toLowerCase();
-      if (s === "present" || s === "checked-in" || s === "late") buckets[idx].present += 1;
-    });
-    return buckets;
+      if (["present","working","late","lunch break","completed","early logout","checked-in",].includes(s)) 
+          buckets[idx].present += 1;
+        });
+      return buckets;
   }, [items]);
 
   if (loading) return <LoadingSpinner label="Loading attendance..." />;
@@ -138,8 +152,8 @@ console.log(
     String(a.employee_name ?? "").toLowerCase().includes(q) ||
     String(a.employee_code ?? "").toLowerCase().includes(q) ||
     String(a.employee_id ?? "").toLowerCase().includes(q) ||
-    String(a.department ?? "").toLowerCase().includes(q) ||
-    String(a.designation ?? "").toLowerCase().includes(q)
+    String(a.department_name ?? "").toLowerCase().includes(q) ||
+    String(a.designation_name ?? "").toLowerCase().includes(q)
   );
 
 });
@@ -245,16 +259,16 @@ console.log(
                   <th className="px-5 py-3">Lunch Out</th>
                   <th className="px-5 py-3">Lunch In</th>
                   <th className="px-5 py-3">Check Out</th>
-                  <th className="px-5 py-3">Lunch Min</th>
-                  <th className="px-5 py-3">Hours</th>
+                  <th className="px-5 py-3">Lunch Duration</th>
+                  <th className="px-5 py-3">Working Hours</th>
                   <th className="px-5 py-3">Status</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {visible.map((a, i) => {
-                  const name = a.employee_name || `Employee #${a.employee_id ?? "—"}`;
+                 const name = a.employee_name || a.full_name || `Employee #${a.employee_id ?? "—"}`;
                   return (
-                    <tr key={a.id ?? i} className="hover:bg-brand-50/40">
+                    <tr key={a.attendance_id ?? i} className="hover:bg-brand-50/40">
                       {!isMyAttendance && (
   <td className="px-5 py-3">
     <div className="flex items-center gap-3">
@@ -279,8 +293,8 @@ console.log(
                       <td className="px-5 py-3 font-mono text-orange-600">{a.lunch_start_time? formatTime(a.lunch_start_time): "—"}</td>
                       <td className="px-5 py-3 font-mono text-emerald-600">{a.lunch_end_time? formatTime(a.lunch_end_time): "—"}</td>
                       <td className="px-5 py-3 font-mono text-slate-700">{formatTime(a.check_out ?? a.logout_time)}</td>
-                      <td className="px-5 py-3 font-mono text-slate-700">{a.lunch_minutes ?? 0}</td>
-                      <td className="px-5 py-3 font-mono text-slate-700">{a.working_hours ? `${a.working_hours} hrs` : "—"}</td>
+                      <td className="px-5 py-3 font-mono text-slate-700">{formatDuration(a.lunch_seconds)}</td>
+                      <td className="px-5 py-3 font-mono text-slate-700">{formatDuration(a.working_seconds)}</td>
                       <td className="px-5 py-3"><StatusBadge status={a.status ?? "—"} /></td>
                     </tr>
                   );

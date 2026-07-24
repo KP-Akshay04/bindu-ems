@@ -1,4 +1,20 @@
-import { X, Mail, Phone, Calendar, Briefcase, Building2, User, BadgeCheck } from "lucide-react";
+// EmployeeProfileDialog.jsx
+// COMPLETE REPLACEMENT - PART 1/2
+
+import {
+  X,
+  Mail,
+  Phone,
+  Calendar,
+  Briefcase,
+  Building2,
+  User,
+  BadgeCheck,
+  IndianRupee,
+  MapPin,
+  Clock,
+} from "lucide-react";
+
 import StatusBadge from "./StatusBadge";
 import { formatDate, initials } from "../utils/format";
 
@@ -12,7 +28,7 @@ export default function EmployeeProfileDialog({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
 
-      <div className="glass-card w-full max-w-4xl rounded-3xl overflow-hidden animate-in fade-in zoom-in duration-300">
+      <div className="glass-card w-full max-w-5xl rounded-3xl overflow-hidden animate-in fade-in zoom-in duration-300">
 
         {/* Header */}
 
@@ -27,15 +43,13 @@ export default function EmployeeProfileDialog({
 
           <div className="flex flex-col md:flex-row items-center gap-6">
 
-            {/* Avatar */}
-
-            <div className="w-28 h-28 rounded-full bg-white/20 ring-4 ring-white/30 flex items-center justify-center text-3xl font-bold">
+            <div className="w-28 h-28 rounded-full bg-white/20 ring-4 ring-white/30 flex items-center justify-center text-3xl font-bold overflow-hidden">
 
               {employee.employee_photo ? (
                 <img
                   src={employee.employee_photo}
                   alt={employee.full_name}
-                  className="w-full h-full object-cover rounded-full"
+                  className="w-full h-full object-cover"
                 />
               ) : (
                 initials(employee.full_name)
@@ -43,15 +57,13 @@ export default function EmployeeProfileDialog({
 
             </div>
 
-            {/* Basic Information */}
-
             <div className="flex-1">
 
               <h2 className="text-3xl font-bold">
                 {employee.full_name}
               </h2>
 
-              <div className="flex flex-wrap items-center gap-3 mt-2 text-sm">
+              <div className="flex flex-wrap gap-3 mt-3 text-sm">
 
                 <span>
                   Employee ID :
@@ -73,7 +85,7 @@ export default function EmployeeProfileDialog({
 
               <div className="mt-4">
                 <StatusBadge
-                  status={employee.status ?? "Active"}
+                  status={employee.status || "Active"}
                 />
               </div>
 
@@ -85,9 +97,7 @@ export default function EmployeeProfileDialog({
 
         {/* Body */}
 
-        <div className="max-h-[65vh] overflow-y-auto p-8 space-y-8">
-
-          {/* Personal Details */}
+        <div className="max-h-[68vh] overflow-y-auto p-8 space-y-8">
 
           <section>
 
@@ -104,35 +114,34 @@ export default function EmployeeProfileDialog({
               <InfoCard
                 icon={<Building2 className="w-5 h-5 text-brand-600" />}
                 label="Department"
-                value={employee.department ?? "—"}
+                value={employee.department_name || "—"}
               />
 
               <InfoCard
                 icon={<Briefcase className="w-5 h-5 text-brand-600" />}
                 label="Designation"
-                value={employee.designation ?? "—"}
+                value={employee.designation_name || "—"}
               />
 
               <InfoCard
                 icon={<BadgeCheck className="w-5 h-5 text-brand-600" />}
                 label="Role"
-                value={employee.role ?? "Employee"}
+                value={employee.role || "Employee"}
               />
 
               <InfoCard
                 icon={<Calendar className="w-5 h-5 text-brand-600" />}
                 label="Joining Date"
-                value={formatDate(
-                  employee.joined_date ??
-                  employee.created_at
-                )}
+                value={
+                  employee.joining_date
+                    ? formatDate(employee.joining_date)
+                    : "—"
+                }
               />
 
             </div>
 
           </section>
-
-          {/* Contact Information */}
 
           <section>
 
@@ -149,22 +158,21 @@ export default function EmployeeProfileDialog({
               <InfoCard
                 icon={<Mail className="w-5 h-5 text-brand-600" />}
                 label="Email"
-                value={employee.email ?? "—"}
+                value={employee.email || "—"}
               />
 
               <InfoCard
                 icon={<Phone className="w-5 h-5 text-brand-600" />}
-                label="Phone Number"
-                value={employee.phone ?? "—"}
+                label="Phone"
+                value={employee.phone || "—"}
               />
 
             </div>
 
           </section>
 
-          {/* Work Information */}
-
-          <section>
+          {/* ===== CONTINUES ===== */}
+                    <section>
 
             <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2 mb-5">
 
@@ -179,25 +187,77 @@ export default function EmployeeProfileDialog({
               <InfoCard
                 icon={<Building2 className="w-5 h-5 text-brand-600" />}
                 label="Branch"
-                value={employee.branch ?? "Not Assigned"}
+                value={employee.branch_name || "Not Assigned"}
               />
 
               <InfoCard
-                icon={<Calendar className="w-5 h-5 text-brand-600" />}
+                icon={<Clock className="w-5 h-5 text-brand-600" />}
                 label="Shift"
-                value={employee.shift_name ?? "Not Assigned"}
+                value={employee.shift_name || "Not Assigned"}
+              />
+
+              <InfoCard
+                icon={<MapPin className="w-5 h-5 text-brand-600" />}
+                label="Allowed Radius"
+                value={
+                  employee.allowed_radius
+                    ? `${employee.allowed_radius} m`
+                    : "Not Configured"
+                }
               />
 
               <InfoCard
                 icon={<BadgeCheck className="w-5 h-5 text-brand-600" />}
-                label="Employee Status"
-                value={employee.status ?? "Active"}
+                label="Status"
+                value={employee.status || "Active"}
+              />
+
+            </div>
+
+          </section>
+
+          <section>
+
+            <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2 mb-5">
+
+              <IndianRupee className="w-5 h-5 text-brand-600" />
+
+              Employment Details
+
+            </h3>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+
+              <InfoCard
+                icon={<IndianRupee className="w-5 h-5 text-brand-600" />}
+                label="Basic Salary"
+                value={
+                  employee.basic_salary != null
+                    ? `₹ ${Number(employee.basic_salary).toLocaleString()}`
+                    : "—"
+                }
+              />
+
+              <InfoCard
+                icon={<Calendar className="w-5 h-5 text-brand-600" />}
+                label="Leave Balance"
+                value={
+                  employee.leave_balance != null
+                    ? `${employee.leave_balance} Days`
+                    : "0 Days"
+                }
               />
 
               <InfoCard
                 icon={<User className="w-5 h-5 text-brand-600" />}
                 label="Employee Code"
-                value={employee.employee_code}
+                value={employee.employee_code || "—"}
+              />
+
+              <InfoCard
+                icon={<Building2 className="w-5 h-5 text-brand-600" />}
+                label="Employee ID"
+                value={employee.employee_id || "—"}
               />
 
             </div>
@@ -205,8 +265,6 @@ export default function EmployeeProfileDialog({
           </section>
 
         </div>
-
-        {/* Footer */}
 
         <div className="border-t border-slate-200 px-8 py-5 flex justify-end bg-slate-50">
 
@@ -222,42 +280,31 @@ export default function EmployeeProfileDialog({
       </div>
 
     </div>
-
   );
 }
-
-/* ------------------------------------------------ */
 
 function InfoCard({
   icon,
   label,
   value,
 }) {
-
   return (
-
     <div className="rounded-2xl border border-slate-200 bg-white p-5 hover:border-brand-300 hover:shadow-md transition-all duration-300">
 
       <div className="flex items-center gap-3">
 
         <div className="w-11 h-11 rounded-xl bg-brand-50 flex items-center justify-center">
-
           {icon}
-
         </div>
 
-        <div>
+        <div className="min-w-0">
 
           <p className="text-xs uppercase tracking-wide text-slate-500">
-
             {label}
-
           </p>
 
-          <p className="text-sm font-semibold text-slate-800 mt-1">
-
+          <p className="text-sm font-semibold text-slate-800 mt-1 break-words">
             {value}
-
           </p>
 
         </div>
@@ -265,7 +312,5 @@ function InfoCard({
       </div>
 
     </div>
-
   );
-
 }

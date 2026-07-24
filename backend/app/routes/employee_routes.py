@@ -3,14 +3,12 @@ from werkzeug.utils import secure_filename
 import os
 from app import db
 from app.models.employee import Employee
-from app.utils.security import hash_password
 from app.utils.security import (hash_password,verify_password)
 from flask import send_from_directory
-from app.models.shift import Shift
-from app.models.department import Department
-from app.models.branch import Branch
 from datetime import datetime
-from app.models.designation import Designation
+from app.utils.employee_serializer import serialize_employee
+
+
 
 employee_bp = Blueprint(
     "employee_bp",
@@ -23,6 +21,18 @@ def create_employee():
 
     data = request.get_json()
 
+    # Check duplicate employee code
+    if Employee.query.filter_by(employee_code=data["employee_code"]).first():
+        return jsonify({
+            "message": "Employee code already exists"
+        }), 409
+
+    # Check duplicate email
+    if Employee.query.filter_by(email=data["email"]).first():
+        return jsonify({
+            "message": "Email already exists"
+        }), 409
+
     employee = Employee(
         employee_code=data["employee_code"],
         full_name=data["full_name"],
@@ -33,83 +43,55 @@ def create_employee():
             data["password"]
         ),
 
+        designation_id=data.get("designation_id"),
+        shift_id=data.get("shift_id"),
         branch_id=data.get("branch_id"),
         department_id=data.get("department_id"),
-        shift_id=data.get("shift_id"),
 
-        designation_id=data.get("designation_id"),
+        joining_date=(
+            datetime.strptime(
+                data["joining_date"],
+                "%Y-%m-%d"
+            ).date()
+            if data.get("joining_date")
+            else None
+        ),
+
         role=data.get("role", "Employee"),
+        status=data.get("status", "active"),
         basic_salary=data.get("basic_salary", 0),
+        leave_balance=data.get("leave_balance", 12),
         
-    )
+        )
+
+
 
     db.session.add(employee)
-    db.session.commit()
 
-    return jsonify({
+    try:
+        db.session.commit()
+
+        return jsonify({
         "message": "Employee created successfully"
     }), 201
+
+    except Exception as e:
+        db.session.rollback()
+
+    return jsonify({
+        "message": "Failed to create employee",
+        "error": str(e)
+    }), 500
 
 @employee_bp.route("/api/employees", methods=["GET"])
 def get_employees():
 
     employees = Employee.query.all()
 
-    result = []
-
-    for emp in employees:
-
-        shift = None
-
-        if emp.shift_id:
-            shift = Shift.query.get(emp.shift_id)
-
-        department = None
-        branch = None
-
-        if emp.department_id:
-            department = Department.query.get(emp.department_id)
-
-        if emp.branch_id:
-            branch = Branch.query.get(emp.branch_id)
-
-        designation = None
-
-        if emp.designation_id:
-            designation = Designation.query.get(emp.designation_id)
-
-        result.append({
-            "employee_id": emp.employee_id,
-            "employee_code": emp.employee_code,
-            "employee_photo": emp.employee_photo,
-            "full_name": emp.full_name,
-            "email": emp.email,
-            "phone": emp.phone,
-
-            "branch_id": emp.branch_id,
-            "branch_name": branch.branch_name if branch else None,
-
-            "department_id": emp.department_id,
-            "department_name": department.department_name if department else None,
-
-            "designation_id": emp.designation_id,
-            "designation_name": designation.designation_name if designation else None,
-
-            "joining_date": str(emp.joining_date) if emp.joining_date else None,
-
-            "shift_id": emp.shift_id,
-            "shift_name": shift.shift_name if shift else None,
-            "shift_start": str(shift.start_time) if shift else None,
-            "shift_end": str(shift.end_time) if shift else None,
-            "grace_minutes": shift.grace_minutes if shift else None,
-
-            "role": emp.role,
-            "basic_salary": emp.basic_salary,
-            "leave_balance": emp.leave_balance,
-            "status": emp.status,
-        })
-
-    return jsonify(result)
+    return jsonify([
+        serialize_employee(emp)
+        for emp in employees
+    ])
 
 @employee_bp.route("/api/employees/<int:id>", methods=["PUT"])
 def update_employee(id):
@@ -162,6 +144,22 @@ def update_employee(id):
     "branch_id",
     employee.branch_id
     )
+
+    if data.get("joining_date"):
+        employee.joining_date = datetime.strptime(
+        data["joining_date"],
+        "%Y-%m-%d"
+    ).date()
+
+    employee.status = data.get(
+    "status",
+    employee.status
+)
+
+    employee.leave_balance = data.get(
+    "leave_balance",
+    employee.leave_balance
+)
 
     db.session.commit()
 

@@ -57,8 +57,8 @@ import LeaveDetailsDialog from "../components/LeaveDetailsDialog";
         String(l.employee_name ?? l.full_name ?? "").toLowerCase().includes(q) ||
         String(l.employee_code ?? "").toLowerCase().includes(q) ||
         String(l.employee_id ?? "").toLowerCase().includes(q) ||
-        String(l.department ?? "").toLowerCase().includes(q) ||
-        String(l.designation ?? "").toLowerCase().includes(q) ||
+        String(l.department_name ?? "").toLowerCase().includes(q) ||
+        String(l.designation_name ?? "").toLowerCase().includes(q) ||
         String(l.leave_type ?? "").toLowerCase().includes(q);
       const matchTab = tab === "all" || String(l.status).toLowerCase() === tab;
       return matchQ && matchTab;
@@ -190,7 +190,7 @@ const handleReject = async (leaveId) => {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {visible.map((l) => {
-            const name = l.employee_name || l.name || `Employee #${l.employee_id ?? ""}`;
+            const name = l.employee_name || l.full_name || `Employee #${l.employee_id ?? ""}`;
             return (
               <div key={l.leave_id ?? l.id ?? `${l.employee_id}-${l.start_date}`}
                   className="glass-card p-5 hover:-translate-y-0.5 transition-transform"
@@ -211,11 +211,11 @@ const handleReject = async (leaveId) => {
     {!myRecordsOnly && (
       <>
         <p className="text-xs text-slate-500">
-          ID : {l.employee_id} • {l.employee_code} • {l.department ?? "Department"}
+          ID : {l.employee_id} • {l.employee_code} • {l.department_name ?? "Department"}
         </p>
 
         <p className="text-xs text-slate-400">
-          {l.designation ?? l.role ?? "Employee"}
+          {l.designation_name ?? l.role ?? "Employee"}
         </p>
       </>
     )}
@@ -235,11 +235,11 @@ const handleReject = async (leaveId) => {
                   </div>
                   <div>
                     <p className="text-xs text-slate-400 uppercase tracking-wider font-semibold">From</p>
-                    <p className="font-mono text-slate-700">{formatDate(l.from_date ?? l.from)}</p>
+                    <p className="font-mono text-slate-700">{formatDate(l.start_date)}</p>
                   </div>
                   <div>
                     <p className="text-xs text-slate-400 uppercase tracking-wider font-semibold">To</p>
-                    <p className="font-mono text-slate-700">{formatDate(l.to_date ?? l.to)}</p>
+                    <p className="font-mono text-slate-700">{formatDate(l.end_date)}</p>
                   </div>
                 </div>
                 {l.reason && (

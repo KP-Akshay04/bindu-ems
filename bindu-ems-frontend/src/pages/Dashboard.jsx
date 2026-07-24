@@ -93,17 +93,21 @@ export default function Dashboard() {
       setEmployees(extractList(employeesData, "employees"));
       setAttendance(extractList(attendanceData, "attendance"));
 
-if (todayData.logged_in && todayData.attendance) {
+if (todayData.attendance) {
+
   setTodayAttendance(todayData.attendance);
 
   setWorkStatus(
     todayData.attendance.status === "Lunch Break"
       ? "Lunch Break"
-      : "Working"
+      : todayData.attendance.status
   );
+
 } else {
+
   setTodayAttendance(null);
   setWorkStatus("Working");
+
 }
 
       setLeaves(extractList(leavesData, "leaves"));
@@ -181,8 +185,10 @@ if (todayAttendance.logout_time) {
   const hours = Number(todayAttendance.working_hours || 0);
 
   setShiftTimer(
-    formatTimer(Math.floor(hours * 3600))
-  );
+  formatTimer(
+    Number(todayAttendance.working_seconds || 0)
+  )
+);
 } else {
   shiftInterval = setInterval(() => {
 
@@ -197,7 +203,7 @@ if (todayAttendance.logout_time) {
 
     // Deduct completed lunch
     workedSeconds -=
-      Number(todayAttendance.lunch_minutes || 0) * 60;
+          Number(todayAttendance.lunch_seconds || 0);
 
     // Deduct current lunch if employee is still on lunch
     if (
@@ -240,10 +246,10 @@ if (todayAttendance.logout_time) {
         );
       }
     }, 1000);
-  } else if (Number(todayAttendance.lunch_minutes || 0) > 0) {
+  } else if (Number(todayAttendance.lunch_seconds || 0) > 0) {
     setLunchTimer(
       formatTimer(
-        Number(todayAttendance.lunch_minutes) * 60
+            Number(todayAttendance.lunch_seconds)
       )
     );
   } else {
@@ -278,12 +284,14 @@ const present = attendance.filter((a) => {
   return (
     dateMatch &&
     (
-      s === "present" ||
-      s === "checked-in" ||
-      s === "late" ||
-      s === "working" ||
-      s === "lunch break" ||
-      s === "logged out"
+        s === "present" ||
+        s === "checked-in" ||
+        s === "late" ||
+        s === "working" ||
+        s === "lunch break" ||
+        s === "logged out" ||
+        s === "completed" ||
+        s === "early logout"
     )
   );
 }).length;
@@ -331,7 +339,7 @@ return {
       if (isNaN(dt.getTime())) return;
       const idx = (dt.getDay() + 6) % 7;
       const s = String(a.status ?? "").toLowerCase();
-      if (s === "present" || s === "checked-in" || s === "late" || s === "working")
+      if (s === "present" || s === "checked-in" || s === "late" || s === "working" || s === "completed" || s === "early logout" || s === "lunch break")
         buckets[idx].present += 1;
       else if (s === "absent") buckets[idx].absent += 1;
       else if (s === "on leave" || s === "leave") buckets[idx].leave += 1;
@@ -361,7 +369,7 @@ return {
   const deptHeadcount = useMemo(() => {
     const map = {};
     employees.forEach((e) => {
-      const d = e.department || "Unassigned";
+      const d = e.department_name || "Unassigned";
       map[d] = (map[d] || 0) + 1;
     });
     return Object.entries(map).map(([dept, count]) => ({ dept, count }));
@@ -579,11 +587,15 @@ return {
 
     </div>
 
-    {!todayAttendance && (
-      <p className="mt-3 text-xs text-amber-600">
-        No check-in found for today.
-      </p>
-    )}
+    {!todayAttendance ? (
+  <p className="mt-3 text-xs text-amber-600">
+    No check-in found for today.
+  </p>
+) : todayAttendance.logout_time ? (
+  <p className="mt-3 text-xs text-green-600">
+    Today's attendance has been completed.
+  </p>
+) : null}
 
   </div>
 )}
