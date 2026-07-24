@@ -231,7 +231,7 @@ const handleReject = async (leaveId) => {
                   </div>
                   <div>
                     <p className="text-xs text-slate-400 uppercase tracking-wider font-semibold">Duration</p>
-                    <p className="font-semibold text-slate-700">{l.days ? `${l.days} Day${l.days > 1 ? "s" : ""}`: "—"}</p>
+                    <p className="font-semibold text-slate-700"> {l.duration != null ? `${l.duration} Day${l.duration !== 1 ? "s" : ""}` : "—"}</p>
                   </div>
                   <div>
                     <p className="text-xs text-slate-400 uppercase tracking-wider font-semibold">From</p>

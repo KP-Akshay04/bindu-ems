@@ -70,16 +70,14 @@ def serialize_employee(employee):
         ),
 
         "joining_date": (
-            str(employee.joining_date)
+        employee.joining_date.strftime("%d %b %Y")
             if employee.joining_date else None
         ),
 
-        "joining_date": (
-    str(employee.joining_date)
-    if employee.joining_date else None
-    ),
-
-    "joining_date_raw": employee.joining_date,
+        "joining_date_raw": (
+         employee.joining_date.strftime("%Y-%m-%d")
+            if employee.joining_date else None
+        ),
 
         "role": employee.role,
         "status": employee.status,

@@ -3,6 +3,10 @@ from datetime import date
 from app.models.employee import Employee
 from app import db
 from app.models.payroll import Payroll
+from app.models.employee import Employee
+from app.models.department import Department
+from app.models.designation import Designation
+from app.models.branch import Branch
 
 payroll_bp = Blueprint(
     "payroll_bp",
@@ -14,6 +18,8 @@ payroll_bp = Blueprint(
 def create_payroll():
 
     data = request.get_json()
+
+    employee_id = int(data["employee_id"])
 
     basic_salary = float(
         data["basic_salary"]
@@ -43,7 +49,7 @@ def create_payroll():
         }), 400
 
     existing = Payroll.query.filter_by(
-        employee_id=employee_id,
+    employee_id=employee_id,
         month=data["month"],
         year=data["year"]
     ).first()
@@ -98,11 +104,22 @@ def get_payroll():
 
     for payroll in payrolls:
 
-        employee = Employee.query.get(
-            payroll.employee_id
-        )
+        employee = Employee.query.get(payroll.employee_id)
+
+        department = Department.query.get(employee.department_id) if employee and employee.department_id else None
+
+        designation = Designation.query.get(employee.designation_id) if employee and employee.designation_id else None
+
+        branch = Branch.query.get(employee.branch_id) if employee and employee.branch_id else None  
 
         result.append({
+
+            "department_name": department.department_name if department else None,
+
+            "designation_name": designation.designation_name if designation else None,
+
+            "branch_name": branch.branch_name if branch else None,
+
             "payroll_id": payroll.payroll_id,
 
             "employee_id": payroll.employee_id,
@@ -124,7 +141,7 @@ def get_payroll():
             "year": payroll.year,
             "status": payroll.status,
 
-            "paid_date":
+            "pay_date":
                 str(payroll.paid_date)
                 if payroll.paid_date
                 else None

@@ -1,6 +1,8 @@
 from app import db
 from datetime import datetime
-
+from app.models.department import Department
+from app.models.designation import Designation
+from app.models.branch import Branch
 
 class Employee(db.Model):
     __tablename__ = "employees"

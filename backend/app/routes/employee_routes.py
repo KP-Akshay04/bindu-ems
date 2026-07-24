@@ -10,6 +10,7 @@ from app.utils.employee_serializer import serialize_employee
 
 
 
+
 employee_bp = Blueprint(
     "employee_bp",
     __name__
@@ -146,10 +147,16 @@ def update_employee(id):
     )
 
     if data.get("joining_date"):
-        employee.joining_date = datetime.strptime(
-        data["joining_date"],
-        "%Y-%m-%d"
-    ).date()
+        try:
+            employee.joining_date = datetime.strptime(
+                data["joining_date"],
+                "%Y-%m-%d"
+            ).date()
+        except ValueError:
+            employee.joining_date = datetime.strptime(
+                data["joining_date"],
+                "%a, %d %b %Y %H:%M:%S GMT"
+        ).date()
 
     employee.status = data.get(
     "status",
@@ -160,6 +167,15 @@ def update_employee(id):
     "leave_balance",
     employee.leave_balance
 )
+
+    if data.get("password"):
+        employee.password_hash = hash_password(
+        data["password"]
+)
+
+
+    if data.get("password") and data["password"].strip():
+        employee.password_hash = hash_password(data["password"])
 
     db.session.commit()
 
