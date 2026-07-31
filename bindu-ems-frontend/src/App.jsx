@@ -19,6 +19,7 @@ import Settings from "./pages/Settings";
 import MyAttendance from "./pages/MyAttendance";
 import MyLeaves from "./pages/MyLeaves";
 import MyPayroll from "./pages/MyPayroll";
+import DepotManagers from "./pages/DepotManagers";
 
 const MANAGEMENT_ROLES = [
   ROLES.SUPER_ADMIN,
@@ -100,6 +101,15 @@ export default function App() {
   element={
     <RoleProtectedRoute allowedRoles={ALL_ROLES}>
       <MyPayroll />
+    </RoleProtectedRoute>
+  }
+/>
+
+<Route
+  path="/depot-managers"
+  element={
+    <RoleProtectedRoute allowedRoles={MANAGEMENT_ROLES}>
+      <DepotManagers />
     </RoleProtectedRoute>
   }
 />

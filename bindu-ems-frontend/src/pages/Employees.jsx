@@ -12,7 +12,7 @@ import {
 } from "lucide-react";
 
 import LoadingSpinner from "../components/LoadingSpinner";
-import ErrorState from "../components/ErrorState";
+import ErrorState from "../components/ErrorState";  
 import EmptyState from "../components/EmptyState";
 import StatusBadge from "../components/StatusBadge";
 import EmployeeFormDialog from "../components/EmployeeFormDialog";
@@ -32,7 +32,10 @@ import {
   initials,
 } from "../utils/format";
 
-export default function Employees() {
+export default function Employees({
+    departmentFilterDefault = "all",
+    pageTitle = "Employees",
+}) {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -41,7 +44,7 @@ export default function Employees() {
 
   const [query, setQuery] = useState("");
   const [departmentFilter, setDepartmentFilter] =
-    useState("all");
+    useState(departmentFilterDefault);
   const [statusFilter, setStatusFilter] =
     useState("all");
 
@@ -94,57 +97,68 @@ export default function Employees() {
     ].sort();
   }, [employees]);
 
-  const filteredEmployees = useMemo(() => {
-    const search = query
-      .trim()
-      .toLowerCase();
+    const filteredEmployees = useMemo(() => {
+      const search = query
+        .trim()
+        .toLowerCase();
 
-    return employees.filter((emp) => {
-      const matchesSearch =
-        !search ||
-        String(emp.full_name ?? "")
-          .toLowerCase()
-          .includes(search) ||
-        String(emp.employee_code ?? "")
-          .toLowerCase()
-          .includes(search) ||
-        String(emp.employee_id ?? "")
-          .toLowerCase()
-          .includes(search) ||
-        String(emp.email ?? "")
-          .toLowerCase()
-          .includes(search) ||
-        String(emp.phone ?? "")
-          .toLowerCase()
-          .includes(search) ||
-        String(emp.department_name ?? "")
-          .toLowerCase()
-          .includes(search) ||
-        String(emp.designation_name ?? "")
-          .toLowerCase()
-          .includes(search) ||
-        String(emp.branch_name ?? "")
-          .toLowerCase()
-          .includes(search);
+      return employees.filter((emp) => {
 
-      const matchesDepartment =
-        departmentFilter === "all" ||
-        emp.department_name ===
-          departmentFilter;
+        const matchesSearch =
+          !search ||
+          String(emp.full_name ?? "")
+            .toLowerCase()
+            .includes(search) ||
+          String(emp.employee_code ?? "")
+            .toLowerCase()
+            .includes(search) ||
+          String(emp.employee_id ?? "")
+            .toLowerCase()
+            .includes(search) ||
+          String(emp.email ?? "")
+            .toLowerCase()
+            .includes(search) ||
+          String(emp.phone ?? "")
+            .toLowerCase()
+            .includes(search) ||
+          String(emp.department_name ?? "")
+            .toLowerCase()
+            .includes(search) ||
+          String(emp.designation_name ?? "")
+            .toLowerCase()
+            .includes(search) ||
+          String(emp.branch_name ?? "")
+            .toLowerCase()
+            .includes(search);
 
-      const matchesStatus =
-        statusFilter === "all" ||
-        String(emp.status)
-          .toLowerCase() ===
-          statusFilter.toLowerCase();
+            
+        const matchesDepartment =
+          pageTitle === "Depot Managers"
+            ? emp.department_name === "Depot"
+            : departmentFilter === "all"
+              ? emp.department_name !== "Depot"
+              : emp.department_name === departmentFilter;;
 
-      return (
-        matchesSearch &&
-        matchesDepartment &&
-        matchesStatus
-      );
-    });
-  }, [
+        const matchesStatus =
+          statusFilter === "all" ||
+          String(emp.status)
+            .toLowerCase() ===
+            statusFilter.toLowerCase();
+
+console.log({
+  pageTitle,
+  departmentFilterDefault,
+  departmentFilter,
+  employees,
+});
+
+        return (
+          matchesSearch &&
+          matchesDepartment &&
+          matchesStatus
+        );
+      });
+    }, [
     employees,
     query,
     departmentFilter,
@@ -252,30 +266,30 @@ export default function Employees() {
 
         <div className="flex flex-wrap gap-3">
 
-          <div className="relative">
-            <Filter className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+          {pageTitle !== "Depot Managers" && (
+  <div className="relative">
+    <Filter className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
 
-            <select
-              className="input h-11 pl-9 pr-8 w-[210px]"
-              value={departmentFilter}
-              onChange={(e) =>
-                setDepartmentFilter(e.target.value)
-              }
-            >
-              <option value="all">
-                All Departments
-              </option>
+    <select
+      className="input h-11 pl-9 pr-8 w-[210px]"
+      value={departmentFilter}
+      onChange={(e) => setDepartmentFilter(e.target.value)}
+    >
+      <option value="all">
+        All Departments
+      </option>
 
-              {departments.map((department) => (
-                <option
-                  key={department}
-                  value={department}
-                >
-                  {department}
-                </option>
-              ))}
-            </select>
-          </div>
+      {departments.map((department) => (
+        <option
+          key={department}
+          value={department}
+        >
+          {department}
+        </option>
+      ))}
+    </select>
+  </div>
+)}
 
           <select
             className="input h-11 w-[170px]"
@@ -306,7 +320,7 @@ export default function Employees() {
             onClick={addEmployee}
           >
             <Plus className="w-4 h-4" />
-            Add Employee
+            {pageTitle === "Depot Managers" ? "Add Depot Manager" : "Add Employee"}
           </button>
 
         </div>
@@ -316,7 +330,11 @@ export default function Employees() {
       {filteredEmployees.length === 0 ? (
 
         <EmptyState
-          title="No Employees Found"
+          title={
+            pageTitle === "Depot Managers"
+              ? "No Depot Managers Found"
+              : "No Employees Found"
+          }
           message="Try changing the filters or create a new employee."
         />
 
@@ -512,6 +530,9 @@ export default function Employees() {
         initial={editingEmployee}
         loading={saving}
         onSubmit={saveEmployee}
+        depotMode={
+          pageTitle === "Depot Managers"
+        }
       />
 
       <EmployeeProfileDialog

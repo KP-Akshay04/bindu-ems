@@ -34,6 +34,8 @@ const NAV_ITEMS = {
 
     { to: "/employees", label: "Employees", icon: Users },
 
+    { to: "/depot-managers", label: "Depot Managers", icon: Users },
+
     { to: "/attendance", label: "Attendance", icon: ClipboardCheck },
 
     { to: "/leaves", label: "Leave Management", icon: CalendarRange },
@@ -54,6 +56,8 @@ const NAV_ITEMS = {
     { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
 
     { to: "/employees", label: "Employees", icon: Users },
+
+    { to: "/depot-managers", label: "Depot Managers", icon: Users },
 
     { to: "/attendance", label: "Attendance", icon: ClipboardCheck },
 

@@ -40,6 +40,7 @@ export default function EmployeeFormDialog({
   onSubmit,
   initial,
   loading,
+  depotMode = false,
 }) {
   const isEdit = Boolean(initial?.employee_id);
 
@@ -73,9 +74,38 @@ export default function EmployeeFormDialog({
       ]);
 
       setBranches(branchRes.data || []);
-      setDepartments(departmentRes.data || []);
-      setDesignations(designationRes.data || []);
-      setShifts(shiftRes.data || []);
+
+const departmentList = departmentRes.data || [];
+const designationList = designationRes.data || [];
+
+setDepartments(departmentList);
+setDesignations(designationList);
+setShifts(shiftRes.data || []);
+
+if (depotMode && !isEdit) {
+
+  const depotDepartment = departmentList.find(
+    dept =>
+      dept.department_name?.trim().toLowerCase() ===
+      "depot"
+  );
+
+  const depotDesignation = designationList.find(
+    des =>
+      des.designation_name?.trim().toLowerCase() ===
+      "depot executive"
+  );
+
+  if (depotDepartment && depotDesignation) {
+    setForm(prev => ({
+      ...prev,
+      department_id: depotDepartment.department_id,
+      designation_id:
+        depotDesignation.designation_id,
+      role: "Employee",
+    }));
+  }
+}
     } catch (err) {
       console.error("Failed loading masters", err);
     }
@@ -88,59 +118,70 @@ export default function EmployeeFormDialog({
   }, [open]);
 
   useEffect(() => {
-    if (!open) return;
+  if (!open) return;
 
-    setForm({
-      employee_code: initial?.employee_code ?? "",
-      full_name: initial?.full_name ?? "",
-      email: initial?.email ?? "",
-      password: "",
-      phone: initial?.phone ?? "",
+  setForm({
+    employee_code: initial?.employee_code ?? "",
+    full_name: initial?.full_name ?? "",
+    email: initial?.email ?? "",
+    password: "",
+    phone: initial?.phone ?? "",
 
-      branch_id: initial?.branch_id ?? "",
-      department_id: initial?.department_id ?? "",
-      designation_id: initial?.designation_id ?? "",
-      shift_id: initial?.shift_id ?? "",
+    branch_id: initial?.branch_id ?? "",
 
-      joining_date:
-        initial?.joining_date_raw ??
-        initial?.joining_date ??
-        "",
+    department_id:
+      initial?.department_id ??
+      (depotMode ? form.department_id : ""),
 
-      role: initial?.role ?? "Employee",
-      status: initial?.status ?? "Active",
+    designation_id:
+      initial?.designation_id ??
+      (depotMode ? form.designation_id : ""),
 
-      basic_salary: initial?.basic_salary ?? "",
-      leave_balance: initial?.leave_balance ?? "",
-    });
-  }, [open, initial]);
+    shift_id: initial?.shift_id ?? "",
+
+    joining_date:
+      initial?.joining_date_raw ??
+      initial?.joining_date ??
+      "",
+
+    role:
+      initial?.role ??
+      (depotMode ? "Employee" : "Employee"),
+
+    status: initial?.status ?? "Active",
+
+    basic_salary: initial?.basic_salary ?? "",
+    leave_balance: initial?.leave_balance ?? "",
+  });
+}, [open, initial, depotMode]);
 
   const submit = (e) => {
     e.preventDefault();
 
     onSubmit({
-      ...form,
+  ...form,
 
-      branch_id: form.branch_id
-        ? Number(form.branch_id)
-        : null,
+  branch_id: form.branch_id
+    ? Number(form.branch_id)
+    : null,
 
-      department_id: form.department_id
-        ? Number(form.department_id)
-        : null,
+  department_id: depotMode
+    ? Number(form.department_id)
+    : (form.department_id ? Number(form.department_id) : null),
 
-      designation_id: form.designation_id
-        ? Number(form.designation_id)
-        : null,
+  designation_id: depotMode
+    ? Number(form.designation_id)
+    : (form.designation_id ? Number(form.designation_id) : null),
 
-      shift_id: form.shift_id
-        ? Number(form.shift_id)
-        : null,
+  shift_id: form.shift_id
+    ? Number(form.shift_id)
+    : null,
 
-      basic_salary: Number(form.basic_salary || 0),
+  role: depotMode ? "Employee" : form.role,
 
-      leave_balance: Number(form.leave_balance || 0),
-    });
+  basic_salary: Number(form.basic_salary || 0),
+  leave_balance: Number(form.leave_balance || 0),
+});
   };
 
   return (
