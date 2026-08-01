@@ -36,7 +36,6 @@ def create_app():
     from app.models.attendance import Attendance
     from app.models.attendance_log import AttendanceLog
     from app.models.shift import Shift
-    from app.routes.shift_routes import shift_bp
 
     from app.routes.branch_routes import branch_bp
     from app.routes.department_routes import department_bp
@@ -50,6 +49,8 @@ def create_app():
     from app.routes.announcement_routes import announcement_bp
     from app.models.designation import Designation
     from app.routes.designation_routes import designation_bp
+    from app.routes.shift_routes import shift_bp
+    from app.routes.import_routes import import_bp
 
     app.register_blueprint(department_bp)
     app.register_blueprint(branch_bp)
@@ -62,6 +63,6 @@ def create_app():
     app.register_blueprint(announcement_bp)
     app.register_blueprint(shift_bp)
     app.register_blueprint(designation_bp)
-
+    app.register_blueprint(import_bp)
 
     return app
