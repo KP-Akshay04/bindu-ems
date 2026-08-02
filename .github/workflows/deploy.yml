@@ -28,11 +28,13 @@ jobs:
 
             echo "========== Backend =========="
 
-            cd backend
+            cd ~/bindu-ems
 
-            source venv/bin/activate
+            source backend/venv/bin/activate
 
             pip install -r requirements.txt
+
+            cd backend
 
             export FLASK_APP=run.py
 
