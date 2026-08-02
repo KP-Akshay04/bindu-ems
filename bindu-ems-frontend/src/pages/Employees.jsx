@@ -17,7 +17,9 @@ import EmptyState from "../components/EmptyState";
 import StatusBadge from "../components/StatusBadge";
 import EmployeeFormDialog from "../components/EmployeeFormDialog";
 import EmployeeProfileDialog from "../components/EmployeeProfileDialog";
+import BranchFilter from "../components/BranchFilter";
 import ConfirmDialog from "../components/ConfirmDialog";
+import { getBranches } from "../services/branchService";
 
 import {
   fetchEmployees,
@@ -43,19 +45,15 @@ export default function Employees({
   const [employees, setEmployees] = useState([]);
 
   const [query, setQuery] = useState("");
-  const [departmentFilter, setDepartmentFilter] =
-    useState(departmentFilterDefault);
-  const [statusFilter, setStatusFilter] =
-    useState("all");
+  const [departmentFilter, setDepartmentFilter] = useState(departmentFilterDefault);
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [selectedBranch, setSelectedBranch] = useState("All");
+  const [branches, setBranches] = useState([]);
+  const [dialogOpen, setDialogOpen] = useState(false);
 
-  const [dialogOpen, setDialogOpen] =
-    useState(false);
+  const [editingEmployee, setEditingEmployee] = useState(null);
 
-  const [editingEmployee, setEditingEmployee] =
-    useState(null);
-
-  const [viewEmployee, setViewEmployee] =
-    useState(null);
+  const [viewEmployee, setViewEmployee] = useState(null);
 
   const [confirm, setConfirm] = useState({
     open: false,
@@ -67,11 +65,18 @@ export default function Employees({
       setLoading(true);
       setError("");
 
-      const response = await fetchEmployees();
+      const [response, branchRes] = await Promise.all([
+  fetchEmployees(),
+  getBranches(),
+]);
 
-      setEmployees(
-        extractList(response, "employees")
-      );
+setEmployees(
+  extractList(response, "employees")
+);
+
+setBranches(branchRes.data);
+
+
     } catch (err) {
       setError(
         err?.response?.data?.message ||
@@ -96,6 +101,7 @@ export default function Employees({
       ),
     ].sort();
   }, [employees]);
+
 
     const filteredEmployees = useMemo(() => {
       const search = query
@@ -145,17 +151,15 @@ export default function Employees({
             .toLowerCase() ===
             statusFilter.toLowerCase();
 
-console.log({
-  pageTitle,
-  departmentFilterDefault,
-  departmentFilter,
-  employees,
-});
+            const matchesBranch =
+              selectedBranch === "All" ||
+              emp.branch_name === selectedBranch;
 
         return (
           matchesSearch &&
           matchesDepartment &&
-          matchesStatus
+          matchesStatus &&
+          matchesBranch
         );
       });
     }, [
@@ -163,6 +167,7 @@ console.log({
     query,
     departmentFilter,
     statusFilter,
+    selectedBranch,
   ]);
 
   const addEmployee = () => {
@@ -290,6 +295,12 @@ console.log({
     </select>
   </div>
 )}
+
+          <BranchFilter
+             branches={branches}
+             value={selectedBranch}
+             onChange={setSelectedBranch}
+            />
 
           <select
             className="input h-11 w-[170px]"

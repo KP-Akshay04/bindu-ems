@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useLocation } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
 import { UserCheck, UserX, Clock, CalendarOff, Search } from "lucide-react";
 import {
   ResponsiveContainer,
@@ -14,10 +15,10 @@ import LoadingSpinner from "../components/LoadingSpinner";
 import ErrorState from "../components/ErrorState";
 import EmptyState from "../components/EmptyState";
 import StatusBadge from "../components/StatusBadge";
+import BranchFilter from "../components/BranchFilter";
 import { fetchAttendance } from "../services/api";
 import {extractList,formatDate,formatTime,formatDuration,initials,} from "../utils/format";
-import { useAuth } from "../context/AuthContext";
-
+import { getBranches } from "../services/branchService";
 
 export default function Attendance({
     myRecordsOnly = false,
@@ -30,16 +31,27 @@ export default function Attendance({
   const [items, setItems] = useState([]);
   const [tab, setTab] = useState("today");
   const [query, setQuery] = useState("");
+  const [branches, setBranches] = useState([]);
+  const [selectedBranch, setSelectedBranch] = useState("All");
 
   const load = async () => {
     setLoading(true);
     setError(null);
     try {
-const data = await fetchAttendance(
-  isMyAttendance || user?.role === "Employee"
-    ? { employee_id: user.employee_id }
-    : {}
-);
+const [data, branchRes] = await Promise.all([
+  fetchAttendance(
+    isMyAttendance || user?.role === "Employee"
+      ? { employee_id: user.employee_id }
+      : {}
+  ),
+  getBranches(),
+]);
+
+setBranches(branchRes.data);
+setItems(extractList(data, "attendance"));
+
+  setBranches(branchRes.data);
+
       setItems(extractList(data, "attendance"));
       console.log(data);
     } catch (err) {
@@ -49,7 +61,7 @@ const data = await fetchAttendance(
     }
   };
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => { if (user) {  load();} }, [user]);
 
   const now = new Date();
 
@@ -146,15 +158,20 @@ if (s === "late") {
 
   const q = query.toLowerCase().trim();
 
-  if (!q) return true;
-
-  return (
+  const matchesSearch =
+    !q ||
     String(a.employee_name ?? "").toLowerCase().includes(q) ||
     String(a.employee_code ?? "").toLowerCase().includes(q) ||
     String(a.employee_id ?? "").toLowerCase().includes(q) ||
     String(a.department_name ?? "").toLowerCase().includes(q) ||
-    String(a.designation_name ?? "").toLowerCase().includes(q)
-  );
+    String(a.designation_name ?? "").toLowerCase().includes(q) ||
+    String(a.branch_name ?? "").toLowerCase().includes(q);
+
+  const matchesBranch =
+    selectedBranch === "All" ||
+    a.branch_name === selectedBranch;
+
+  return matchesSearch && matchesBranch;
 
 });
 
@@ -177,25 +194,40 @@ if (s === "late") {
         })}
       </div>
 
-      {!isMyAttendance && (
+      {(user?.role === "Super Admin" ||
+  user?.role === "HR") && (
 
 <div className="glass-card p-4">
 
-  <div className="relative">
+  <div className="grid md:grid-cols-2 gap-4">
 
-    <Search
-      className="absolute left-3 top-1/2 -translate-y-1/2
-                 w-4 h-4 text-slate-400"
-    />
+    {/* Search */}
 
-    <input
-      type="text"
-      value={query}
-      onChange={(e) => setQuery(e.target.value)}
-      placeholder="Search employee by ID, Code, Name, Department or Designation..."
-      autoComplete="off"
-      className="input h-11 pl-10"
-    />
+    <div className="relative">
+
+      <Search
+        className="absolute left-3 top-1/2 -translate-y-1/2
+                   w-4 h-4 text-slate-400"
+      />
+
+      <input
+        type="text"
+        value={query}
+        onChange={(e) => setQuery(e.target.value)}
+        placeholder="Search employee..."
+        autoComplete="off"
+        className="input h-11 pl-10"
+      />
+
+    </div>
+
+    {/* Branch Filter */}
+
+    <BranchFilter
+  branches={branches}
+  value={selectedBranch}
+  onChange={setSelectedBranch}
+/>
 
   </div>
 
@@ -251,9 +283,13 @@ if (s === "late") {
             <table className="w-full text-sm">
               <thead className="bg-brand-50/60">
                 <tr className="text-left text-xs uppercase tracking-wider text-slate-500 font-bold">
-                  {!isMyAttendance && (
+                  {(user?.role === "Super Admin" ||
+  user?.role === "HR") && (
+                    <>
                   <th className="px-5 py-3">Employee</th>
-                  )}
+                  <th className="px-5 py-3">Branch</th>
+                </>
+                )}
                   <th className="px-5 py-3">Date</th>
                   <th className="px-5 py-3">Check In</th>
                   <th className="px-5 py-3">Lunch Out</th>
@@ -269,24 +305,71 @@ if (s === "late") {
                  const name = a.employee_name || a.full_name || `Employee #${a.employee_id ?? "—"}`;
                   return (
                     <tr key={a.attendance_id ?? i} className="hover:bg-brand-50/40">
-                      {!isMyAttendance && (
-  <td className="px-5 py-3">
+                      {(user?.role === "Super Admin" ||
+  user?.role === "HR") && (
+<>
+
+<td className="px-5 py-3">
+
     <div className="flex items-center gap-3">
-      <div className="w-9 h-9 rounded-full bg-gradient-to-br from-brand-400 to-brand-600 text-white flex items-center justify-center font-bold">
-        {initials(name)}
-      </div>
 
-      <div>
-        <p className="font-semibold text-slate-800">
-          {name}
-        </p>
+        <div
+            className="w-9 h-9 rounded-full
+            bg-gradient-to-br
+            from-brand-400
+            to-brand-600
+            text-white
+            flex
+            items-center
+            justify-center
+            font-bold"
+        >
+            {initials(name)}
+        </div>
 
-        <p className="text-xs text-slate-500">
-          {a.employee_code}
-        </p>
-      </div>
+        <div>
+
+            <p className="font-semibold text-slate-800">
+
+                {name}
+
+            </p>
+
+            <p className="text-xs text-slate-500">
+
+                {a.employee_code}
+
+            </p>
+
+        </div>
+
     </div>
-  </td>
+
+</td>
+
+<td className="px-5 py-3">
+
+    <span
+        className="
+        inline-flex
+        items-center
+        rounded-full
+        bg-sky-50
+        px-3
+        py-1
+        text-xs
+        font-semibold
+        text-sky-700
+        "
+    >
+
+        📍 {a.branch_name || "—"}
+
+    </span>
+
+</td>
+
+</>
 )}
                       <td className="px-5 py-3 text-slate-700">{formatDate(a.attendance_date ?? a.date ?? a.created_at)}</td>
                       <td className="px-5 py-3 font-mono text-slate-700">{formatTime(a.check_in ?? a.login_time)}</td>

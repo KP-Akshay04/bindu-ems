@@ -13,6 +13,8 @@ import LoadingSpinner from "../components/LoadingSpinner";
 import ErrorState from "../components/ErrorState";
 import EmptyState from "../components/EmptyState";
 import StatusBadge from "../components/StatusBadge";
+import BranchFilter from "../components/BranchFilter";
+import { getBranches } from "../services/branchService";
 import { fetchPayroll, markPayrollPaid, fetchEmployees, createPayroll, } from "../services/api";
 import { extractList, formatINR, formatDate, initials } from "../utils/format";
 import { useAuth } from "../context/AuthContext";
@@ -41,6 +43,8 @@ export default function Payroll({
   const [items, setItems] = useState([]);
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState("all");
+  const [branches, setBranches] = useState([]);
+  const [selectedBranch, setSelectedBranch] = useState("All");
   const [selectedPayroll, setSelectedPayroll] = useState(null);
   const [showPayslip, setShowPayslip] = useState(false);
 
@@ -49,34 +53,42 @@ export default function Payroll({
   setError(null);
 
   try {
-    const payrollData = await fetchPayroll(
-  myRecordsOnly || user?.role === "Employee"
-    ? {
-        employee_id: user.employee_id,
-      }
-    : {}
-);
 
-    setItems(
+  const [payrollData, branchRes] = await Promise.all([
+    fetchPayroll(
+      myRecordsOnly || user?.role === "Employee"
+        ? {
+            employee_id: user.employee_id,
+          }
+        : {}
+    ),
+    getBranches(),
+  ]);
+
+  setBranches(branchRes.data);
+
+  setItems(
+    extractList(
+      payrollData,
+      "payroll"
+    )
+  );
+
+  if (user?.role !== "Employee") {
+
+    const employeeData =
+      await fetchEmployees();
+
+    setEmployees(
       extractList(
-        payrollData,
-        "payroll"
+        employeeData,
+        "employees"
       )
     );
 
-    if (
-      user?.role !==
-      "Employee"
-    ) {
-      const employeeData =
-        await fetchEmployees();
+  }
 
-      setEmployees(
-  extractList(employeeData, "employees")
-);
-    
-    }
-  } catch (err) {
+} catch (err) {
     setError(
       err?.response?.data
         ?.message ||
@@ -160,19 +172,55 @@ useEffect(() => {
   }, [enriched]);
 
   const filtered = useMemo(() => {
-    const q = query.toLowerCase().trim();
-    return enriched.filter(
-      (p) =>
-        (!q ||
-          String(p.employee_name ?? p.name ?? "").toLowerCase().includes(q) ||
-          String(p.employee_code ?? "").toLowerCase().includes(q) ||
-          String(p.employee_id ?? "").toLowerCase().includes(q) ||
-          String(p.department_name ?? "").toLowerCase().includes(q) ||
-          String(p.designation_name ?? "").toLowerCase().includes(q) ||
-          String(p.pay_date ?? "").toLowerCase().includes(q)) &&
-        (status === "all" || String(p.status).toLowerCase() === status.toLowerCase())
+
+  const q = query.toLowerCase().trim();
+
+  return enriched.filter((p) => {
+
+    const matchesSearch =
+      !q ||
+      String(p.employee_name ?? p.name ?? "")
+        .toLowerCase()
+        .includes(q) ||
+      String(p.employee_code ?? "")
+        .toLowerCase()
+        .includes(q) ||
+      String(p.employee_id ?? "")
+        .toLowerCase()
+        .includes(q) ||
+      String(p.department_name ?? "")
+        .toLowerCase()
+        .includes(q) ||
+      String(p.designation_name ?? "")
+        .toLowerCase()
+        .includes(q) ||
+      String(p.pay_date ?? "")
+        .toLowerCase()
+        .includes(q);
+
+    const matchesStatus =
+      status === "all" ||
+      String(p.status).toLowerCase() ===
+      status.toLowerCase();
+
+    const matchesBranch =
+      selectedBranch === "All" ||
+      p.branch_name === selectedBranch;
+
+    return (
+      matchesSearch &&
+      matchesStatus &&
+      matchesBranch
     );
-  }, [enriched, query, status]);
+
+  });
+
+}, [
+  enriched,
+  query,
+  status,
+  selectedBranch,
+]);
 
   if (loading) return <LoadingSpinner label="Loading payroll..." />;
   if (error) return <ErrorState message={error} onRetry={load} />;
@@ -317,6 +365,12 @@ const handleCreatePayroll =
         className="input h-11 pl-10"
       />
     </div>
+
+    <BranchFilter
+      branches={branches}
+      value={selectedBranch}
+      onChange={setSelectedBranch}
+    />
 
     <select
       value={status}

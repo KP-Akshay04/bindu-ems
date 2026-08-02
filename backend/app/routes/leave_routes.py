@@ -6,6 +6,7 @@ from app import db
 from app.models.department import Department
 from app.models.designation import Designation
 from app.models.employee import Employee
+from app.models.branch import Branch
 from app.models.leave_request import LeaveRequest
 
 leave_bp = Blueprint(
@@ -49,10 +50,16 @@ def get_designation_name(employee):
 
 
 def serialize_leave(leave):
+    
 
     employee = Employee.query.get(
         leave.employee_id
     )
+
+    branch = None
+
+    if employee and employee.branch_id:
+        branch = Branch.query.get(employee.branch_id)   
 
     total_days = (
         (leave.end_date - leave.start_date).days
@@ -77,11 +84,15 @@ def serialize_leave(leave):
             employee.role
             if employee else None,
 
-        "department":
+        "department_name":
             get_department_name(employee),
 
-        "designation":
+        "designation_name":
             get_designation_name(employee),
+
+        "branch_name":
+            branch.branch_name
+            if branch else None,
 
         "leave_type":
             leave.leave_type,

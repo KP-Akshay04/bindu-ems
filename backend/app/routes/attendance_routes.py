@@ -6,6 +6,7 @@ from app.models.attendance import Attendance
 from app.models.attendance_log import AttendanceLog
 from app.models.employee import Employee
 from app.models.shift import Shift
+from app.models.branch import Branch
 
 
 
@@ -350,6 +351,11 @@ def get_today_attendance(employee_id):
 
     employee = Employee.query.get(employee_id)
 
+    branch = None
+
+    if employee and employee.branch_id:
+        branch = Branch.query.get(employee.branch_id)
+
     shift = None
 
     if employee and employee.shift_id:
@@ -375,6 +381,12 @@ def get_today_attendance(employee_id):
 
         "employee_code":
             employee.employee_code if employee else None,
+
+        "branch_id":
+            employee.branch_id if employee else None,
+
+        "branch_name":
+            branch.branch_name if branch else None,
 
         "role":
             employee.role if employee else None,
@@ -439,6 +451,11 @@ def get_attendance():
 
         employee = Employee.query.get(record.employee_id)
 
+        branch = None
+
+        if employee and employee.branch_id:
+            branch = Branch.query.get(employee.branch_id)
+
         shift = None
         if employee and employee.shift_id:
             shift = Shift.query.get(employee.shift_id)
@@ -446,17 +463,28 @@ def get_attendance():
         attendance.append({
             "attendance_id": record.attendance_id,
             "employee_id": record.employee_id,
+
             "employee_name": employee.full_name if employee else None,
             "employee_code": employee.employee_code if employee else None,
+
+            "branch_id": employee.branch_id if employee else None,
+            "branch_name": branch.branch_name if branch else None,
+
             "role": employee.role if employee else None,
+
             "shift_name": shift.shift_name if shift else None,
+
             "attendance_date": str(record.attendance_date),
+
             "login_time": str(record.login_time) if record.login_time else None,
             "logout_time": str(record.logout_time) if record.logout_time else None,
+
             "working_seconds": record.working_seconds,
             "lunch_seconds": record.lunch_seconds,
+
             "lunch_start_time": str(record.lunch_start_time) if record.lunch_start_time else None,
             "lunch_end_time": str(record.lunch_end_time) if record.lunch_end_time else None,
+            
             "status": record.status,
         })
 

@@ -4,6 +4,8 @@ import LoadingSpinner from "../components/LoadingSpinner";
 import ErrorState from "../components/ErrorState";
 import EmptyState from "../components/EmptyState";
 import StatusBadge from "../components/StatusBadge";
+import BranchFilter from "../components/BranchFilter";
+import { getBranches } from "../services/branchService";
 import Modal from "../components/Modal";
 import { fetchLeaves, createLeave, approveLeave, rejectLeave, } from "../services/api";
 import { extractList, formatDate, initials } from "../utils/format";
@@ -16,6 +18,8 @@ import LeaveDetailsDialog from "../components/LeaveDetailsDialog";
   const [error, setError] = useState(null);
   const [items, setItems] = useState([]);
   const [query, setQuery] = useState("");
+  const [branches, setBranches] = useState([]);
+  const [selectedBranch, setSelectedBranch] = useState("All");
   const [tab, setTab] = useState("all");
   const [selectedLeave, setSelectedLeave] = useState(null);
 
@@ -27,12 +31,18 @@ import LeaveDetailsDialog from "../components/LeaveDetailsDialog";
     setLoading(true);
     setError(null);
     try {
-      const data = await fetchLeaves(
-  myRecordsOnly || user?.role === "Employee"
-    ? { employee_id: user.employee_id }
-    : {}
-);
-      setItems(extractList(data, "leaves"));
+      const [data, branchRes] = await Promise.all([
+  fetchLeaves(
+    myRecordsOnly || user?.role === "Employee"
+      ? { employee_id: user.employee_id }
+      : {}
+  ),
+  getBranches(),
+]);
+
+setItems(extractList(data, "leaves"));
+setBranches(branchRes.data);
+
     } catch (err) {
       setError(err?.response?.data?.message || err.message || "Failed to load leaves.");
     } finally {
@@ -61,9 +71,10 @@ import LeaveDetailsDialog from "../components/LeaveDetailsDialog";
         String(l.designation_name ?? "").toLowerCase().includes(q) ||
         String(l.leave_type ?? "").toLowerCase().includes(q);
       const matchTab = tab === "all" || String(l.status).toLowerCase() === tab;
-      return matchQ && matchTab;
+      const matchBranch = selectedBranch === "All" || l.branch_name === selectedBranch;
+      return (matchQ && matchTab && matchBranch);
     });
-  }, [items, query, tab]);
+  }, [ items, query, tab, selectedBranch,]);
 
   const submit = async (e) => {
     e.preventDefault();
@@ -152,6 +163,14 @@ const handleReject = async (leaveId) => {
         className="input h-11 pl-10"
       />
     </div>
+  )}
+
+  {!myRecordsOnly && (
+    <BranchFilter
+      branches={branches}
+      value={selectedBranch}
+      onChange={setSelectedBranch}
+    />
   )}
 
   <button
