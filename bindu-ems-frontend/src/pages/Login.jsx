@@ -47,7 +47,7 @@ function DropLogo({ size = 56 }) {
 }
 
 export default function Login() {
-  const { login } = useAuth();
+  const { login, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const from = location.state?.from?.pathname || "/dashboard";
@@ -60,40 +60,101 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setError("");
-    if (!employeeId.trim() || !password.trim()) {
-      setError("Please enter both Employee ID and Password.");
+
+  const getCurrentLocation = () => {
+  return new Promise((resolve, reject) => {
+
+    if (!navigator.geolocation) {
+      reject(new Error("Geolocation is not supported by this browser."));
       return;
     }
-    setLoading(true);
-    try {
-  const loggedInUser = await login({
-    employee_id: employeeId.trim(),
-    password,
-    role,
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        resolve({
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude,
+        });
+      },
+
+      (error) => {
+        switch (error.code) {
+          case error.PERMISSION_DENIED:
+            reject(new Error("Location permission is required."));
+            break;
+
+          case error.POSITION_UNAVAILABLE:
+            reject(new Error("Unable to determine your location."));
+            break;
+
+          case error.TIMEOUT:
+            reject(new Error("Location request timed out."));
+            break;
+
+          default:
+            reject(new Error("Unable to get your location."));
+        }
+      },
+
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 0,
+      }
+    );
   });
-  // Auto check-in for the day (silently ignored if already checked in)
-  try {
-  const { attendanceCheckIn } = await import("../services/api");
-  await attendanceCheckIn(loggedInUser.employee_id);
-} catch (e) {
-  // expected when already checked in for the day — ignore
-}
-  navigate(from, { replace: true });
-} 
-    catch (err) {
-      const msg =
-        err?.response?.data?.message ||
-        err?.response?.data?.error ||
-        err?.message ||
-        "Login failed. Please check your credentials.";
-      setError(msg);
-    } finally {
-      setLoading(false);
+};
+
+
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    setError("");
+
+    if (!employeeId.trim() || !password.trim()) {
+        setError("Please enter both Employee ID and Password.");
+        return;
     }
-  };
+
+    setLoading(true);
+
+    try {
+
+        const loggedInUser = await login({
+            employee_id: employeeId.trim(),
+            password,
+            role,
+        });
+
+        const gpsLocation = await getCurrentLocation();
+
+        const { attendanceCheckIn } = await import("../services/api");
+
+        await attendanceCheckIn({
+            employee_id: loggedInUser.employee_id,
+            latitude: gpsLocation.latitude,
+            longitude: gpsLocation.longitude,
+        });
+
+        navigate(from, { replace: true });
+
+    } catch (err) {
+
+        const msg =
+            err?.response?.data?.message ||
+            err?.response?.data?.error ||
+            err?.message ||
+            "Login failed.";
+
+        setError(msg);
+
+    } finally {
+
+        setLoading(false);
+
+    }
+};
 
   return (
     <div className="relative min-h-screen w-full overflow-hidden text-slate-900">

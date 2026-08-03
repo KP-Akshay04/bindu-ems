@@ -7,7 +7,7 @@ from app.models.attendance_log import AttendanceLog
 from app.models.employee import Employee
 from app.models.shift import Shift
 from app.models.branch import Branch
-
+from app.services.gps_service import verify_employee_location
 
 
 
@@ -32,10 +32,45 @@ def employee_login():
         else data.get("employee_id")
     )
 
+    latitude = None if isinstance(data, int) else data.get("latitude")
+    longitude = None if isinstance(data, int) else data.get("longitude")
+
+    if latitude is None or longitude is None:
+        return jsonify({
+            "message": "Current GPS location is required."
+        }), 400
+
+    try:
+        latitude = float(latitude)
+        longitude = float(longitude)
+    except (TypeError, ValueError):
+        return jsonify({
+            "message": "Invalid GPS coordinates."
+        }), 400
+
+    if not (-90 <= latitude <= 90):
+        return jsonify({
+            "message": "Invalid latitude."
+        }), 400
+
+    if not (-180 <= longitude <= 180):
+        return jsonify({
+            "message": "Invalid longitude."
+        }), 400 
+
     if not employee_id:
         return jsonify({
             "message": "employee_id is required"
         }), 400
+
+    gps_result = verify_employee_location(
+    employee_id=employee_id,
+    latitude=latitude,
+    longitude=longitude,
+    )
+
+    if not gps_result["allowed"]:
+        return jsonify(gps_result), 403
 
     existing = Attendance.query.filter_by(
         employee_id=employee_id,
@@ -95,7 +130,13 @@ def employee_login():
 
     return jsonify({
         "message": "Login recorded successfully",
-        "status": status
+        "status": status,
+        "gps": {
+            "branch_name": gps_result["branch_name"],
+            "branch_id": gps_result["branch_id"],
+            "distance": gps_result["distance"],
+            "allowed_radius": gps_result["allowed_radius"],
+        }
     })
 
 

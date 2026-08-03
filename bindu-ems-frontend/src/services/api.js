@@ -55,8 +55,8 @@ export const fetchAttendance = (params = {}) =>
 export const fetchTodayAttendance = (employeeId) =>
   api.get(`/api/attendance/today/${employeeId}`).then((r) => r.data);
 
-export const attendanceCheckIn = (employeeId) =>
-  api.post("/api/attendance/login", { employee_id: employeeId }).then((r) => r.data);
+export const attendanceCheckIn = (payload) =>
+  api.post("/api/attendance/login", payload).then((r) => r.data);
 
 export const attendanceLunchOut = (payload) =>
   api.post("/api/attendance/lunch-out", payload).then((r) => r.data);
