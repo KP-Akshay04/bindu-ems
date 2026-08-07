@@ -32,7 +32,17 @@ export default function Attendance({
   const [tab, setTab] = useState("today");
   const [query, setQuery] = useState("");
   const [branches, setBranches] = useState([]);
+  const departments = useMemo(() => {
+  return [
+    ...new Set(
+      items
+        .map((x) => x.department_name)
+        .filter(Boolean)
+    ),
+  ].sort();
+}, [items]);
   const [selectedBranch, setSelectedBranch] = useState("All");
+  const [selectedDepartment, setSelectedDepartment] = useState("All");
 
   const load = async () => {
     setLoading(true);
@@ -47,12 +57,9 @@ const [data, branchRes] = await Promise.all([
   getBranches(),
 ]);
 
-setBranches(branchRes.data);
+setBranches(branchRes.data || []);
 setItems(extractList(data, "attendance"));
 
-  setBranches(branchRes.data);
-
-      setItems(extractList(data, "attendance"));
       console.log(data);
     } catch (err) {
       setError(err?.response?.data?.message || err.message || "Failed to load attendance.");
@@ -171,7 +178,11 @@ if (s === "late") {
     selectedBranch === "All" ||
     a.branch_name === selectedBranch;
 
-  return matchesSearch && matchesBranch;
+    const matchesDepartment =
+  selectedDepartment === "All" ||
+  a.department_name === selectedDepartment;
+
+  return (matchesSearch && matchesBranch && matchesDepartment);
 
 });
 
@@ -199,7 +210,7 @@ if (s === "late") {
 
 <div className="glass-card p-4">
 
-  <div className="grid md:grid-cols-2 gap-4">
+  <div className="grid md:grid-cols-3 gap-4">
 
     {/* Search */}
 
@@ -221,13 +232,37 @@ if (s === "late") {
 
     </div>
 
-    {/* Branch Filter */}
+{/* Branch Filter */}
 
-    <BranchFilter
+<BranchFilter
   branches={branches}
   value={selectedBranch}
   onChange={setSelectedBranch}
 />
+
+{/* Department Filter */}
+
+<select
+  className="input h-11"
+  value={selectedDepartment}
+  onChange={(e) =>
+    setSelectedDepartment(e.target.value)
+  }
+>
+  <option value="All">
+    All Departments
+  </option>
+
+  {departments.map((department) => (
+    <option
+      key={department}
+      value={department}
+    >
+      {department}
+    </option>
+  ))}
+</select>
+
 
   </div>
 

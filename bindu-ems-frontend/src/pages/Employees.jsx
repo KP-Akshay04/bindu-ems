@@ -93,14 +93,18 @@ setBranches(branchRes.data);
   }, []);
 
   const departments = useMemo(() => {
-    return [
-      ...new Set(
-        employees
-          .map((e) => e.department_name)
-          .filter(Boolean)
-      ),
-    ].sort();
-  }, [employees]);
+  return [
+    ...new Set(
+      employees
+        .map((e) => e.department_name)
+        .filter(
+          (department) =>
+            department &&
+            department !== "Depot"
+        )
+    ),
+  ].sort();
+}, [employees]);
 
 
     const filteredEmployees = useMemo(() => {

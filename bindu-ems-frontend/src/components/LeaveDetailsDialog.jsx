@@ -118,13 +118,25 @@ export default function LeaveDetailsDialog({
               <InfoCard
                 icon={<Building2 className="w-5 h-5 text-brand-600" />}
                 label="Department"
-                value={leave.department ?? "—"}
+                value={leave.department_name ?? "—"}
               />
 
               <InfoCard
                 icon={<Briefcase className="w-5 h-5 text-brand-600" />}
                 label="Designation"
-                value={leave.designation ?? "—"}
+                value={leave.designation_name ?? "—"}
+              />
+
+              <InfoCard
+                icon={<Building2 className="w-5 h-5 text-brand-600" />}
+                label="Branch"
+                value={leave.branch_name ?? "—"}
+              />
+
+              <InfoCard
+                icon={<User className="w-5 h-5 text-brand-600" />}
+                label="Role"
+                value={leave.role ?? "—"}
               />
 
               <InfoCard

@@ -116,6 +116,11 @@ def update_employee(id):
         employee.phone
     )
 
+    employee.employee_code = data.get(
+        "employee_code",
+        employee.employee_code
+    )
+
     employee.department_id = data.get(
     "department_id",
     employee.department_id

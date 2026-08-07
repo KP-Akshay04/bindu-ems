@@ -312,7 +312,13 @@ if (depotMode && !isEdit) {
                 Select Department
               </option>
 
-              {departments.map((department) => (
+              {departments
+  .filter(
+    (department) =>
+      depotMode ||
+      department.department_name !== "Depot"
+  )
+  .map((department) => (
                 <option
                   key={department.department_id}
                   value={department.department_id}

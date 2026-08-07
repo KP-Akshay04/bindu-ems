@@ -11,19 +11,18 @@ export default function AnnouncementFormDialog({
   const [message, setMessage] = useState("");
 
   const handleSubmit = (e) => {
-    e.preventDefault();
+  e.preventDefault();
 
-    onSubmit({
-      title,
-      message,
-      department_id: form.department_id
-  ? Number(form.department_id)
-  : null,
-    });
+  onSubmit({
+    title,
+    message,
+  });
 
-    setTitle("");
-    setMessage("");
-  };
+  setTitle("");
+  setMessage("");
+
+  onClose();
+};
 
   return (
     <Modal

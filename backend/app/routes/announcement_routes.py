@@ -17,9 +17,27 @@ def create_announcement():
 
     data = request.get_json()
 
+    title = str(
+        data.get("title", "")
+    ).strip()
+
+    message = str(
+        data.get("message", "")
+    ).strip()
+
+    if not title:
+        return jsonify({
+            "message": "Title is required."
+        }), 400
+
+    if not message:
+        return jsonify({
+            "message": "Message is required."
+        }), 400
+
     announcement = Announcement(
-        title=data["title"],
-        message=data["message"],
+        title=title,
+        message=message,
         created_by=data.get("created_by")
     )
 

@@ -1,4 +1,5 @@
 from app import db
+from datetime import datetime
 
 
 class LeaveRequest(db.Model):
@@ -36,4 +37,10 @@ class LeaveRequest(db.Model):
     status = db.Column(
         db.String(20),
         default="Pending"
+    )
+
+    created_at = db.Column(
+    db.DateTime,
+    nullable=False,
+    default=datetime.utcnow
     )

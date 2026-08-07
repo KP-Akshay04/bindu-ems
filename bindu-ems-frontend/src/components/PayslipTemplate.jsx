@@ -6,11 +6,11 @@ const money = (value) =>
 export default function PayslipTemplate({ payroll }) {
   if (!payroll) return null;
 
-  const basic = Number(payroll._basic ?? payroll.basic_salary ?? 0);
-  const hra = Number(payroll._hra ?? 0);
-  const allowance = Number(payroll._allowances ?? 0);
-  const deduction = Number(payroll._deductions ?? 0);
-  const net = Number(payroll._net ?? payroll.net_salary ?? 0);
+  const basic = Number(payroll.basic_salary ?? 0);
+  const hra = 0;
+  const allowance = Number(payroll.allowances ?? 0);
+  const deduction = Number(payroll.deductions ?? 0);
+  const net = Number(payroll.net_salary ?? 0);
 
   return (
     <div
@@ -96,12 +96,17 @@ export default function PayslipTemplate({ payroll }) {
 
         <Info
           label="Department"
-          value={payroll.department}
+          value={payroll.department_name}
         />
 
         <Info
           label="Designation"
-          value={payroll.designation}
+          value={payroll.designation_name}
+        />
+
+        <Info
+          label="Branch"
+          value={payroll.branch_name}
         />
 
         <Info

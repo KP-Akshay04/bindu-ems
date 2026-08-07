@@ -1,4 +1,4 @@
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, current_app
 from datetime import datetime, date, timedelta
 
 from app import db
@@ -7,7 +7,10 @@ from app.models.attendance_log import AttendanceLog
 from app.models.employee import Employee
 from app.models.shift import Shift
 from app.models.branch import Branch
+from app.models.department import Department
+from app.models.designation import Designation
 from app.services.gps_service import verify_employee_location
+
 
 
 
@@ -23,6 +26,8 @@ attendance_bp = Blueprint(
     methods=["POST"]
 )
 def employee_login():
+
+    print("DEVELOPMENT_MODE =", current_app.config.get("DEVELOPMENT_MODE"))
 
     data = request.get_json()
 
@@ -63,14 +68,26 @@ def employee_login():
             "message": "employee_id is required"
         }), 400
 
-    gps_result = verify_employee_location(
-    employee_id=employee_id,
-    latitude=latitude,
-    longitude=longitude,
-    )
+    if current_app.config.get("DEVELOPMENT_MODE", False):
 
-    if not gps_result["allowed"]:
-        return jsonify(gps_result), 403
+        gps_result = {
+            "allowed": True,
+            "branch_name": "Development Mode",
+            "branch_id": None,
+            "distance": 0,
+            "allowed_radius": 0,
+        }
+
+    else:
+
+        gps_result = verify_employee_location(
+            employee_id=employee_id,
+            latitude=latitude,
+            longitude=longitude
+        )
+
+        if not gps_result["allowed"]:
+            return jsonify(gps_result), 403
 
     existing = Attendance.query.filter_by(
         employee_id=employee_id,
@@ -492,6 +509,20 @@ def get_attendance():
 
         employee = Employee.query.get(record.employee_id)
 
+
+        department = None
+        designation = None
+
+        if employee and employee.department_id:
+            department = Department.query.get(
+            employee.department_id
+            )
+
+        if employee and employee.designation_id:
+            designation = Designation.query.get(
+            employee.designation_id
+        )
+        
         branch = None
 
         if employee and employee.branch_id:
@@ -507,6 +538,10 @@ def get_attendance():
 
             "employee_name": employee.full_name if employee else None,
             "employee_code": employee.employee_code if employee else None,
+
+            "department_name": department.department_name if department else None,
+            "designation_name": designation.designation_name if designation else None,
+    
 
             "branch_id": employee.branch_id if employee else None,
             "branch_name": branch.branch_name if branch else None,

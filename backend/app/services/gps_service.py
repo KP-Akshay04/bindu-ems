@@ -1,3 +1,5 @@
+from flask import current_app
+
 from app.models.employee import Employee
 from app.models.branch import Branch
 from app.utils.gps import calculate_distance
@@ -13,6 +15,26 @@ def verify_employee_location(
     the allowed GPS radius of their
     assigned branch.
     """
+
+    # ==========================================
+    # DEVELOPMENT MODE
+    # ==========================================
+    if (
+        current_app.config.get("DEVELOPMENT_MODE")
+        and current_app.config.get("SKIP_GPS_VERIFICATION")
+    ):
+        print("DEVELOPMENT MODE =", current_app.config.get("DEVELOPMENT_MODE"))
+        print("SKIP GPS =", current_app.config.get("SKIP_GPS_VERIFICATION"))
+    
+        
+    return {
+            "allowed": True,
+            "distance": 0,
+            "allowed_radius": 0,
+            "branch_name": "Development Mode",
+            "branch_id": None,
+            "message": "GPS verification skipped (Development Mode)."
+        }
 
     employee = Employee.query.get(employee_id)
 

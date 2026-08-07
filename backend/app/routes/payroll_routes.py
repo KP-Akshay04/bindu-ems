@@ -133,6 +133,10 @@ def get_payroll():
             "role":
                 employee.role if employee else None,
 
+            "joining_date":
+                str(employee.joining_date) if employee and employee.joining_date
+                else None,
+
             "basic_salary": payroll.basic_salary,
             "allowances": payroll.allowances,
             "deductions": payroll.deductions,
@@ -145,6 +149,8 @@ def get_payroll():
                 str(payroll.paid_date)
                 if payroll.paid_date
                 else None
+
+            
         })
 
     return jsonify(result)

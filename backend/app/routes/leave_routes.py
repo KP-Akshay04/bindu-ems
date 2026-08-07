@@ -112,6 +112,10 @@ def serialize_leave(leave):
         "status":
             leave.status,
 
+        "created_at":
+            leave.created_at.isoformat()
+            if leave.created_at else None,
+
         "leave_balance":
             employee.leave_balance
             if employee else None
