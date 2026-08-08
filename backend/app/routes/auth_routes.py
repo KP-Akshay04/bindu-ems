@@ -38,6 +38,14 @@ def login():
             "message": "Invalid Password"
         }), 401
 
+
+    if str(employee.status).strip().lower() != "active":
+        return jsonify({
+            "success": False,
+            "message": "Your account is inactive. Please contact the administrator."
+        }), 403
+
+
     employee_role = str(employee.role).strip().lower()
 
     # Super Admin can access every portal

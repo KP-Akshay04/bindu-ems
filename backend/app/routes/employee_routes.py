@@ -212,13 +212,34 @@ def change_password(id):
 
     data = request.get_json()
 
-    current_password = data.get(
-        "current_password"
-    )
+    current_password = data.get("current_password")
+    new_password = data.get("new_password")
 
-    new_password = data.get(
-        "new_password"
-    )
+    if not current_password or not new_password:
+        return jsonify({
+            "message": "Current password and new password are required."
+        }), 400
+
+    if len(new_password) < 8:
+        return jsonify({
+            "message": "New password must be at least 8 characters long."
+        }), 400
+
+    if not verify_password(
+        current_password,
+        employee.password_hash
+    ):
+        return jsonify({
+            "message": "Current password is incorrect"
+        }), 400
+
+    employee.password_hash = hash_password(new_password)
+
+    db.session.commit()
+
+    return jsonify({
+        "message": "Password updated successfully"
+    })
 
     if not verify_password(
         current_password,
