@@ -49,22 +49,30 @@ export function AuthProvider({ children }) {
       role,
     });
 
-    const token =
-      data.token ||
-      data.access_token ||
-      data.jwt ||
-      null;
+   const token =
+    data.token ||
+    data.access_token ||
+    data.jwt ||
+    null;
 
-    if (token) {
-      localStorage.setItem(
-        "bindu_token",
-        token
-      );
-    }
+  if (token) {
+    localStorage.setItem(
+      "bindu_token",
+      token
+    );
+  }
 
-    persist(data);
+  const userData = {
+    ...data,
+  };
 
-    return data;
+  delete userData.access_token;
+  delete userData.token;
+  delete userData.jwt;
+
+  persist(userData);
+
+  return data;
   };
 
   const refreshUser = async () => {

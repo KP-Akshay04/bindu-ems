@@ -2,9 +2,11 @@ from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from flask_cors import CORS
+from flask_jwt_extended import JWTManager
 
 db = SQLAlchemy()
 migrate = Migrate()
+jwt = JWTManager()
 
 def create_app():
     app = Flask(__name__)
@@ -23,10 +25,11 @@ def create_app():
     supports_credentials=True
 )
 
-    app.config.from_object("config.Config")
+    app.config.from_object("config.Config")   
 
     db.init_app(app)
     migrate.init_app(app, db)
+    jwt.init_app(app)   
 
     from app.models.branch import Branch
     from app.models.employee import Employee

@@ -3,6 +3,7 @@ from flask import Blueprint, request, jsonify
 from app.models.employee import Employee
 from app.models.designation import Designation
 from app.utils.security import verify_password
+from flask_jwt_extended import create_access_token
 
 auth_bp = Blueprint(
     "auth_bp",
@@ -78,6 +79,25 @@ def login():
             "message": "Invalid login portal."
         }), 400
 
+    access_token = create_access_token(
+    identity=str(employee.employee_id),
+    additional_claims={
+        "role": (
+            "HR"
+            if employee_role in ["hr", "hr admin", "hr_admin"]
+            else (
+                "Super Admin"
+                if employee_role in [
+                    "super admin",
+                    "admin",
+                    "super_admin"
+                ]
+                else "Employee"
+            )
+        )
+    }
+)
+
     designation = None
 
     if employee.designation_id:
@@ -85,6 +105,8 @@ def login():
 
     return jsonify({
         "success": True,
+
+        "access_token": access_token,
 
         "employee_id": employee.employee_id,
         "employee_code": employee.employee_code,
