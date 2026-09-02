@@ -1,5 +1,8 @@
 from flask import Blueprint, jsonify, request
-from flask_jwt_extended import get_jwt
+from flask_jwt_extended import (
+    get_jwt,
+    verify_jwt_in_request
+)
 
 from app.models.permission import Permission
 from app.models.role_permission import RolePermission
@@ -11,6 +14,11 @@ access_control_bp = Blueprint(
     __name__
 )
 
+
+# ============================================================
+# GET ALL ACCESS CONTROL SETTINGS
+# SUPER ADMIN ONLY
+# ============================================================
 
 @access_control_bp.route(
     "/api/access-control",
@@ -40,6 +48,7 @@ def get_access_control():
         roles = {}
 
         for role_permission in role_permissions:
+
             roles[role_permission.role] = (
                 role_permission.enabled
             )
@@ -66,6 +75,109 @@ def get_access_control():
         "permissions": result
     }), 200
 
+
+# ============================================================
+# GET CURRENT USER PERMISSIONS
+# USED BY HR
+# ============================================================
+
+@access_control_bp.route(
+    "/api/access-control/my-permissions",
+    methods=["GET"]
+)
+def get_my_permissions():
+
+    # --------------------------------------------------------
+    # Verify JWT
+    # --------------------------------------------------------
+
+    verify_jwt_in_request()
+
+    claims = get_jwt()
+
+    role = str(
+        claims.get("role", "")
+    ).strip()
+
+    if not role:
+        return jsonify({
+            "success": False,
+            "message": "User role not found in token."
+        }), 401
+
+    normalized_role = role.lower()
+
+    # --------------------------------------------------------
+    # Get all permissions
+    # --------------------------------------------------------
+
+    permissions = (
+        Permission.query
+        .order_by(Permission.permission_id.asc())
+        .all()
+    )
+
+    result = {}
+
+    # --------------------------------------------------------
+    # Super Admin automatically has all permissions
+    # --------------------------------------------------------
+
+    if normalized_role in [
+        "super admin",
+        "super_admin",
+        "admin"
+    ]:
+
+        for permission in permissions:
+
+            result[
+                permission.permission_key
+            ] = True
+
+        return jsonify({
+            "success": True,
+            "role": role,
+            "permissions": result
+        }), 200
+
+    # --------------------------------------------------------
+    # HR / other roles
+    # --------------------------------------------------------
+
+    for permission in permissions:
+
+        role_permission = (
+            RolePermission.query
+            .filter(
+                RolePermission.permission_id ==
+                    permission.permission_id
+            )
+            .filter(
+                RolePermission.role.ilike(role)
+            )
+            .first()
+        )
+
+        result[
+            permission.permission_key
+        ] = (
+            bool(role_permission.enabled)
+            if role_permission
+            else False
+        )
+
+    return jsonify({
+        "success": True,
+        "role": role,
+        "permissions": result
+    }), 200
+
+
+# ============================================================
+# UPDATE ACCESS CONTROL
+# SUPER ADMIN ONLY
+# ============================================================
 
 @access_control_bp.route(
     "/api/access-control/<string:permission_key>",
@@ -106,20 +218,41 @@ def update_access_control(permission_key):
 
     normalized_role = role.lower()
 
+    # --------------------------------------------------------
+    # Super Admin cannot be disabled
+    # --------------------------------------------------------
+
     if normalized_role in [
         "super admin",
         "super_admin",
         "admin"
     ]:
+
         return jsonify({
             "success": False,
             "message": "Super Admin access cannot be disabled."
         }), 400
 
-    role_permission = RolePermission.query.filter_by(
-        role=role,
-        permission_id=permission.permission_id
-    ).first()
+    # --------------------------------------------------------
+    # Find existing role permission
+    # Case-insensitive role matching
+    # --------------------------------------------------------
+
+    role_permission = (
+        RolePermission.query
+        .filter(
+            RolePermission.permission_id ==
+                permission.permission_id
+        )
+        .filter(
+            RolePermission.role.ilike(role)
+        )
+        .first()
+    )
+
+    # --------------------------------------------------------
+    # Create if it doesn't exist
+    # --------------------------------------------------------
 
     if not role_permission:
 
@@ -134,7 +267,12 @@ def update_access_control(permission_key):
         db.session.add(role_permission)
 
     else:
+
         role_permission.enabled = enabled
+
+    # --------------------------------------------------------
+    # Commit
+    # --------------------------------------------------------
 
     from app import db
 
@@ -144,6 +282,7 @@ def update_access_control(permission_key):
         "success": True,
         "message": "Access control updated successfully.",
         "permission": {
+
             "permission_key":
                 permission.permission_key,
 
@@ -151,7 +290,7 @@ def update_access_control(permission_key):
                 permission.permission_name,
 
             "role":
-                role,
+                role_permission.role,
 
             "enabled":
                 role_permission.enabled

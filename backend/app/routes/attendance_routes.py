@@ -1,6 +1,12 @@
 from flask import Blueprint, request, jsonify, current_app
 from datetime import datetime, date, timedelta
 
+from flask_jwt_extended import (
+    get_jwt,
+    get_jwt_identity,
+    verify_jwt_in_request,
+)
+
 from app import db
 from app.models.attendance import Attendance
 from app.models.attendance_log import AttendanceLog
@@ -10,9 +16,7 @@ from app.models.branch import Branch
 from app.models.department import Department
 from app.models.designation import Designation
 from app.services.gps_service import verify_employee_location
-
-
-
+from app.utils.authorization import has_permission
 
 
 attendance_bp = Blueprint(
@@ -21,15 +25,87 @@ attendance_bp = Blueprint(
 )
 
 
+# ============================================================
+# AUTHORIZATION HELPERS
+# ============================================================
+
+def get_current_user_context():
+    """
+    Returns the authenticated employee ID and role
+    from the JWT.
+    """
+
+    verify_jwt_in_request()
+
+    identity = get_jwt_identity()
+    claims = get_jwt()
+
+    role = str(
+        claims.get("role", "")
+    ).strip()
+
+    return identity, role
+
+
+def is_super_admin(role):
+    return role.lower() in [
+        "super admin",
+        "super_admin",
+        "admin"
+    ]
+
+
+def can_manage_attendance(role):
+    """
+    Super Admin always has Attendance management access.
+
+    HR requires the database-controlled
+    hr_attendance permission.
+    """
+
+    if is_super_admin(role):
+        return True
+
+    if role.lower() == "hr":
+        return has_permission(
+            role,
+            "hr_attendance"
+        )
+
+    return False
+
+
+def is_same_employee(
+    current_employee_id,
+    requested_employee_id
+):
+    return str(current_employee_id) == str(
+        requested_employee_id
+    )
+
+
+# ============================================================
+# EMPLOYEE CHECK-IN
+# ============================================================
+
 @attendance_bp.route(
     "/api/attendance/login",
     methods=["POST"]
 )
 def employee_login():
 
-    print("DEVELOPMENT_MODE =", current_app.config.get("DEVELOPMENT_MODE"))
+    current_employee_id, role = (
+        get_current_user_context()
+    )
 
-    data = request.get_json()
+    print(
+        "DEVELOPMENT_MODE =",
+        current_app.config.get(
+            "DEVELOPMENT_MODE"
+        )
+    )
+
+    data = request.get_json() or {}
 
     employee_id = (
         data
@@ -37,38 +113,90 @@ def employee_login():
         else data.get("employee_id")
     )
 
-    latitude = None if isinstance(data, int) else data.get("latitude")
-    longitude = None if isinstance(data, int) else data.get("longitude")
+    latitude = (
+        None
+        if isinstance(data, int)
+        else data.get("latitude")
+    )
+
+    longitude = (
+        None
+        if isinstance(data, int)
+        else data.get("longitude")
+    )
+
+    if not employee_id:
+
+        return jsonify({
+            "success": False,
+            "message":
+                "employee_id is required."
+        }), 400
+
+    # --------------------------------------------------------
+    # Users can only create attendance for themselves.
+    # --------------------------------------------------------
+
+    if not is_same_employee(
+        current_employee_id,
+        employee_id
+    ):
+
+        return jsonify({
+            "success": False,
+            "message":
+                "Access denied. You can only record your own attendance."
+        }), 403
+
+    # --------------------------------------------------------
+    # GPS is mandatory
+    # --------------------------------------------------------
 
     if latitude is None or longitude is None:
+
         return jsonify({
-            "message": "Current GPS location is required."
+            "success": False,
+            "message":
+                "Current GPS location is required."
         }), 400
 
     try:
+
         latitude = float(latitude)
         longitude = float(longitude)
+
     except (TypeError, ValueError):
+
         return jsonify({
-            "message": "Invalid GPS coordinates."
+            "success": False,
+            "message":
+                "Invalid GPS coordinates."
         }), 400
 
     if not (-90 <= latitude <= 90):
+
         return jsonify({
-            "message": "Invalid latitude."
+            "success": False,
+            "message":
+                "Invalid latitude."
         }), 400
 
     if not (-180 <= longitude <= 180):
-        return jsonify({
-            "message": "Invalid longitude."
-        }), 400 
 
-    if not employee_id:
         return jsonify({
-            "message": "employee_id is required"
+            "success": False,
+            "message":
+                "Invalid longitude."
         }), 400
 
-    if current_app.config.get("DEVELOPMENT_MODE", False):
+    # --------------------------------------------------------
+    # GPS branch validation
+    # --------------------------------------------------------
+
+    if current_app.config.get(
+        "DEVELOPMENT_MODE",
+        False
+    ):
 
         gps_result = {
             "allowed": True,
@@ -87,7 +215,14 @@ def employee_login():
         )
 
         if not gps_result["allowed"]:
-            return jsonify(gps_result), 403
+
+            return jsonify(
+                gps_result
+            ), 403
+
+    # --------------------------------------------------------
+    # Prevent duplicate attendance
+    # --------------------------------------------------------
 
     existing = Attendance.query.filter_by(
         employee_id=employee_id,
@@ -95,18 +230,37 @@ def employee_login():
     ).first()
 
     if existing:
+
         return jsonify({
-            "message": "Attendance already recorded today",
+            "success": True,
+            "message":
+                "Attendance already recorded today",
             "already_logged_in": True
         }), 200
 
-    employee = Employee.query.get(employee_id)
+    # --------------------------------------------------------
+    # Employee / shift
+    # --------------------------------------------------------
+
+    employee = Employee.query.get(
+        employee_id
+    )
+
+    if not employee:
+
+        return jsonify({
+            "success": False,
+            "message":
+                "Employee not found."
+        }), 404
 
     status = "Working"
 
-    if employee and employee.shift_id:
+    if employee.shift_id:
 
-        shift = Shift.query.get(employee.shift_id)
+        shift = Shift.query.get(
+            employee.shift_id
+        )
 
         if shift:
 
@@ -116,8 +270,8 @@ def employee_login():
                 datetime.combine(
                     date.today(),
                     shift.start_time
-                ) +
-                timedelta(
+                )
+                + timedelta(
                     minutes=shift.grace_minutes
                 )
             ).time()
@@ -126,6 +280,10 @@ def employee_login():
                 status = "Late"
             else:
                 status = "Present"
+
+    # --------------------------------------------------------
+    # Create attendance
+    # --------------------------------------------------------
 
     attendance = Attendance(
         employee_id=employee_id,
@@ -136,6 +294,10 @@ def employee_login():
 
     db.session.add(attendance)
 
+    # --------------------------------------------------------
+    # Attendance log
+    # --------------------------------------------------------
+
     log = AttendanceLog(
         employee_id=employee_id,
         action="LOGIN",
@@ -143,19 +305,34 @@ def employee_login():
     )
 
     db.session.add(log)
+
     db.session.commit()
 
     return jsonify({
-        "message": "Login recorded successfully",
+        "success": True,
+        "message":
+            "Login recorded successfully",
         "status": status,
         "gps": {
-            "branch_name": gps_result["branch_name"],
-            "branch_id": gps_result["branch_id"],
-            "distance": gps_result["distance"],
-            "allowed_radius": gps_result["allowed_radius"],
-        }
-    })
+            "branch_name":
+                gps_result["branch_name"],
 
+            "branch_id":
+                gps_result["branch_id"],
+
+            "distance":
+                gps_result["distance"],
+
+            "allowed_radius":
+                gps_result["allowed_radius"],
+        }
+    }), 200
+
+
+# ============================================================
+# LUNCH OUT
+# PERSONAL ACTION
+# ============================================================
 
 @attendance_bp.route(
     "/api/attendance/lunch-out",
@@ -163,7 +340,11 @@ def employee_login():
 )
 def lunch_out():
 
-    data = request.get_json()
+    current_employee_id, role = (
+        get_current_user_context()
+    )
+
+    data = request.get_json() or {}
 
     employee_id = (
         data
@@ -171,24 +352,52 @@ def lunch_out():
         else data.get("employee_id")
     )
 
+    if not employee_id:
+
+        return jsonify({
+            "success": False,
+            "message":
+                "employee_id is required."
+        }), 400
+
+    if not is_same_employee(
+        current_employee_id,
+        employee_id
+    ):
+
+        return jsonify({
+            "success": False,
+            "message":
+                "Access denied. You can only manage your own attendance."
+        }), 403
+
     attendance = Attendance.query.filter_by(
         employee_id=employee_id,
         attendance_date=date.today()
     ).first()
 
     if not attendance:
+
         return jsonify({
-            "message": "Attendance record not found"
+            "success": False,
+            "message":
+                "Attendance record not found"
         }), 404
-    
+
     if attendance.logout_time:
+
         return jsonify({
-            "message": "Cannot start lunch after logout."
+            "success": False,
+            "message":
+                "Cannot start lunch after logout."
         }), 400
 
     if attendance.lunch_end_time:
+
         return jsonify({
-            "message": "Lunch break already used today"
+            "success": False,
+            "message":
+                "Lunch break already used today"
         }), 400
 
     attendance.status = "Lunch Break"
@@ -205,20 +414,55 @@ def lunch_out():
     db.session.commit()
 
     return jsonify({
-    "message": "Lunch break started",
-    "attendance": {
-        "attendance_id": attendance.attendance_id,
-        "employee_id": attendance.employee_id,
-        "attendance_date": str(attendance.attendance_date),
-        "login_time": str(attendance.login_time) if attendance.login_time else None,
-        "logout_time": str(attendance.logout_time) if attendance.logout_time else None,
-        "working_seconds": attendance.working_seconds,
-        "lunch_seconds": attendance.lunch_seconds,
-        "lunch_start_time": str(attendance.lunch_start_time) if attendance.lunch_start_time else None,
-        "lunch_end_time": str(attendance.lunch_end_time) if attendance.lunch_end_time else None,
-        "status": attendance.status,
-    }
-})
+        "success": True,
+        "message":
+            "Lunch break started",
+        "attendance": {
+            "attendance_id":
+                attendance.attendance_id,
+
+            "employee_id":
+                attendance.employee_id,
+
+            "attendance_date":
+                str(attendance.attendance_date),
+
+            "login_time":
+                str(attendance.login_time)
+                if attendance.login_time
+                else None,
+
+            "logout_time":
+                str(attendance.logout_time)
+                if attendance.logout_time
+                else None,
+
+            "working_seconds":
+                attendance.working_seconds,
+
+            "lunch_seconds":
+                attendance.lunch_seconds,
+
+            "lunch_start_time":
+                str(attendance.lunch_start_time)
+                if attendance.lunch_start_time
+                else None,
+
+            "lunch_end_time":
+                str(attendance.lunch_end_time)
+                if attendance.lunch_end_time
+                else None,
+
+            "status":
+                attendance.status,
+        }
+    }), 200
+
+
+# ============================================================
+# LUNCH IN
+# PERSONAL ACTION
+# ============================================================
 
 @attendance_bp.route(
     "/api/attendance/lunch-in",
@@ -226,7 +470,11 @@ def lunch_out():
 )
 def lunch_in():
 
-    data = request.get_json()
+    current_employee_id, role = (
+        get_current_user_context()
+    )
+
+    data = request.get_json() or {}
 
     employee_id = (
         data
@@ -234,66 +482,128 @@ def lunch_in():
         else data.get("employee_id")
     )
 
+    if not employee_id:
+
+        return jsonify({
+            "success": False,
+            "message":
+                "employee_id is required."
+        }), 400
+
+    if not is_same_employee(
+        current_employee_id,
+        employee_id
+    ):
+
+        return jsonify({
+            "success": False,
+            "message":
+                "Access denied. You can only manage your own attendance."
+        }), 403
+
     attendance = Attendance.query.filter_by(
         employee_id=employee_id,
         attendance_date=date.today()
     ).first()
 
     if not attendance:
+
         return jsonify({
-            "message": "Attendance record not found"
+            "success": False,
+            "message":
+                "Attendance record not found"
         }), 404
-    
+
     if attendance.logout_time:
+
         return jsonify({
-            "message": "Cannot return from lunch after logout."
+            "success": False,
+            "message":
+                "Cannot return from lunch after logout."
         }), 400
 
     if not attendance.lunch_start_time:
+
         return jsonify({
-            "message": "Lunch break was not started"
+            "success": False,
+            "message":
+                "Lunch break was not started"
         }), 400
 
     attendance.lunch_end_time = datetime.now()
 
     lunch_seconds = int(
-    (
-        attendance.lunch_end_time -
-        attendance.lunch_start_time
-    ).total_seconds()
-)
+        (
+            attendance.lunch_end_time
+            - attendance.lunch_start_time
+        ).total_seconds()
+    )
 
     attendance.lunch_seconds = (
         attendance.lunch_seconds or 0
-        ) + lunch_seconds
+    ) + lunch_seconds
 
     attendance.status = "Working"
 
     log = AttendanceLog(
-            employee_id=employee_id,
-            action="LUNCH_IN",
-            timestamp=datetime.now()
-        )
+        employee_id=employee_id,
+        action="LUNCH_IN",
+        timestamp=datetime.now()
+    )
 
     db.session.add(log)
     db.session.commit()
 
     return jsonify({
-        "message": "Returned from lunch",
+        "success": True,
+        "message":
+            "Returned from lunch",
         "attendance": {
-        "attendance_id": attendance.attendance_id,
-        "employee_id": attendance.employee_id,
-        "attendance_date": str(attendance.attendance_date),
-        "login_time": str(attendance.login_time) if attendance.login_time else None,
-        "logout_time": str(attendance.logout_time) if attendance.logout_time else None,
-        "working_seconds": attendance.working_seconds,
-        "lunch_seconds": attendance.lunch_seconds,
-        "lunch_start_time": str(attendance.lunch_start_time) if attendance.lunch_start_time else None,
-        "lunch_end_time": str(attendance.lunch_end_time) if attendance.lunch_end_time else None,
-        "status": attendance.status,
-    }
-})
+            "attendance_id":
+                attendance.attendance_id,
 
+            "employee_id":
+                attendance.employee_id,
+
+            "attendance_date":
+                str(attendance.attendance_date),
+
+            "login_time":
+                str(attendance.login_time)
+                if attendance.login_time
+                else None,
+
+            "logout_time":
+                str(attendance.logout_time)
+                if attendance.logout_time
+                else None,
+
+            "working_seconds":
+                attendance.working_seconds,
+
+            "lunch_seconds":
+                attendance.lunch_seconds,
+
+            "lunch_start_time":
+                str(attendance.lunch_start_time)
+                if attendance.lunch_start_time
+                else None,
+
+            "lunch_end_time":
+                str(attendance.lunch_end_time)
+                if attendance.lunch_end_time
+                else None,
+
+            "status":
+                attendance.status,
+        }
+    }), 200
+
+
+# ============================================================
+# CHECK OUT
+# PERSONAL ACTION
+# ============================================================
 
 @attendance_bp.route(
     "/api/attendance/logout/<int:employee_id>",
@@ -301,48 +611,92 @@ def lunch_in():
 )
 def employee_logout(employee_id):
 
+    current_employee_id, role = (
+        get_current_user_context()
+    )
+
+    if not is_same_employee(
+        current_employee_id,
+        employee_id
+    ):
+
+        return jsonify({
+            "success": False,
+            "message":
+                "Access denied. You can only manage your own attendance."
+        }), 403
+
     attendance = Attendance.query.filter_by(
         employee_id=employee_id,
         attendance_date=date.today()
     ).first()
 
     if not attendance:
+
         return jsonify({
-            "message": "Attendance record not found"
+            "success": False,
+            "message":
+                "Attendance record not found"
         }), 404
 
     if attendance.logout_time:
+
         return jsonify({
-            "message": "Already logged out"
+            "success": False,
+            "message":
+                "Already logged out"
         }), 400
 
     attendance.logout_time = datetime.now()
 
     total_duration = (
-        attendance.logout_time -
-        attendance.login_time
+        attendance.logout_time
+        - attendance.login_time
     )
 
-    if attendance.lunch_start_time and not attendance.lunch_end_time:
+    # --------------------------------------------------------
+    # Automatically close an active lunch
+    # --------------------------------------------------------
+
+    if (
+        attendance.lunch_start_time
+        and not attendance.lunch_end_time
+    ):
+
         attendance.lunch_end_time = datetime.now()
 
-        attendance.lunch_seconds += int(
+        attendance.lunch_seconds = (
+            attendance.lunch_seconds or 0
+        ) + int(
             (
-                attendance.lunch_end_time -
-                attendance.lunch_start_time
+                attendance.lunch_end_time
+                - attendance.lunch_start_time
             ).total_seconds()
-    )
+        )
 
+    # --------------------------------------------------------
+    # Calculate working time
+    # --------------------------------------------------------
 
     working_seconds = max(
-    0,
-    int(total_duration.total_seconds()) -
-    (attendance.lunch_seconds or 0)
-)
+        0,
+        int(
+            total_duration.total_seconds()
+        )
+        - (attendance.lunch_seconds or 0)
+    )
 
-    attendance.working_seconds = working_seconds
+    attendance.working_seconds = (
+        working_seconds
+    )
 
-    employee = Employee.query.get(employee_id)
+    # --------------------------------------------------------
+    # Determine final status
+    # --------------------------------------------------------
+
+    employee = Employee.query.get(
+        employee_id
+    )
 
     if employee and employee.shift_id:
 
@@ -352,15 +706,29 @@ def employee_logout(employee_id):
 
         if shift:
 
-            logout_time = attendance.logout_time.time()
+            logout_time = (
+                attendance.logout_time.time()
+            )
 
             if logout_time < shift.end_time:
-                attendance.status = "Early Logout"
+
+                attendance.status = (
+                    "Early Logout"
+                )
+
             else:
-                attendance.status = "Completed"
+
+                attendance.status = (
+                    "Completed"
+                )
 
     else:
+
         attendance.status = "Logged Out"
+
+    # --------------------------------------------------------
+    # Attendance log
+    # --------------------------------------------------------
 
     log = AttendanceLog(
         employee_id=employee_id,
@@ -372,96 +740,9 @@ def employee_logout(employee_id):
     db.session.commit()
 
     return jsonify({
-        "message": "Logout recorded successfully",
-        "working_seconds": attendance.working_seconds,
-        "lunch_seconds": attendance.lunch_seconds,
-        "status": attendance.status
-    })
-
-
-@attendance_bp.route(
-    "/api/attendance/today/<int:employee_id>",
-    methods=["GET"]
-)
-def get_today_attendance(employee_id):
-
-
-    attendance = Attendance.query.filter_by(
-        employee_id=employee_id,
-        attendance_date=date.today()
-    ).first()
-    
-    print("DATABASE URI:", db.engine.url)
-    print("TODAY:", date.today())
-
-    print("=== DEBUG ===")
-    print("Attendance ID:", attendance.attendance_id if attendance else None)
-    print("Attendance Date:", attendance.attendance_date if attendance else None)
-    print("Status:", attendance.status if attendance else None)
-    print("Login:", attendance.login_time if attendance else None)
-    print("Logout:", attendance.logout_time if attendance else None)
-
-    if not attendance:
-        return jsonify({
-            "logged_in": False,
-            "attendance": None
-        }), 200
-
-    employee = Employee.query.get(employee_id)
-
-    branch = None
-
-    if employee and employee.branch_id:
-        branch = Branch.query.get(employee.branch_id)
-
-    shift = None
-
-    if employee and employee.shift_id:
-        shift = Shift.query.get(employee.shift_id)
-
-    logged_in = (
-    attendance is not None and
-    attendance.logout_time is None
-)
-
-    return jsonify({
-
-    "logged_in": logged_in,
-
-    "attendance": {
-
-        "attendance_id": attendance.attendance_id,
-
-        "employee_id": attendance.employee_id,
-
-        "employee_name":
-            employee.full_name if employee else None,
-
-        "employee_code":
-            employee.employee_code if employee else None,
-
-        "branch_id":
-            employee.branch_id if employee else None,
-
-        "branch_name":
-            branch.branch_name if branch else None,
-
-        "role":
-            employee.role if employee else None,
-
-        "shift_name":
-            shift.shift_name if shift else None,
-
-        "attendance_date":
-            str(attendance.attendance_date),
-
-        "login_time":
-            str(attendance.login_time)
-            if attendance.login_time else None,
-
-        "logout_time":
-            str(attendance.logout_time)
-            if attendance.logout_time else None,
+        "success": True,
+        "message":
+            "Logout recorded successfully",
 
         "working_seconds":
             attendance.working_seconds,
@@ -469,19 +750,180 @@ def get_today_attendance(employee_id):
         "lunch_seconds":
             attendance.lunch_seconds,
 
-        "lunch_start_time":
-            str(attendance.lunch_start_time)
-            if attendance.lunch_start_time else None,
-
-        "lunch_end_time":
-            str(attendance.lunch_end_time)
-            if attendance.lunch_end_time else None,
-
         "status":
             attendance.status
-    }
+    }), 200
 
-})
+
+# ============================================================
+# TODAY'S PERSONAL ATTENDANCE
+# ============================================================
+
+@attendance_bp.route(
+    "/api/attendance/today/<int:employee_id>",
+    methods=["GET"]
+)
+def get_today_attendance(employee_id):
+
+    current_employee_id, role = (
+        get_current_user_context()
+    )
+
+    # --------------------------------------------------------
+    # Only the employee themselves can use this endpoint.
+    # --------------------------------------------------------
+
+    if not is_same_employee(
+        current_employee_id,
+        employee_id
+    ):
+
+        return jsonify({
+            "success": False,
+            "message":
+                "Access denied. You can only view your own attendance."
+        }), 403
+
+    attendance = Attendance.query.filter_by(
+        employee_id=employee_id,
+        attendance_date=date.today()
+    ).first()
+
+    if not attendance:
+
+        return jsonify({
+            "success": True,
+            "logged_in": False,
+            "attendance": None
+        }), 200
+
+    employee = Employee.query.get(
+        employee_id
+    )
+
+    branch = None
+
+    if employee and employee.branch_id:
+
+        branch = Branch.query.get(
+            employee.branch_id
+        )
+
+    shift = None
+
+    if employee and employee.shift_id:
+
+        shift = Shift.query.get(
+            employee.shift_id
+        )
+
+    logged_in = (
+        attendance.logout_time is None
+    )
+
+    return jsonify({
+
+        "success": True,
+
+        "logged_in":
+            logged_in,
+
+        "attendance": {
+
+            "attendance_id":
+                attendance.attendance_id,
+
+            "employee_id":
+                attendance.employee_id,
+
+            "employee_name":
+                employee.full_name
+                if employee
+                else None,
+
+            "employee_code":
+                employee.employee_code
+                if employee
+                else None,
+
+            "branch_id":
+                employee.branch_id
+                if employee
+                else None,
+
+            "branch_name":
+                branch.branch_name
+                if branch
+                else None,
+
+            "role":
+                employee.role
+                if employee
+                else None,
+
+            "shift_name":
+                shift.shift_name
+                if shift
+                else None,
+
+            "attendance_date":
+                str(
+                    attendance.attendance_date
+                ),
+
+            "login_time":
+                str(
+                    attendance.login_time
+                )
+                if attendance.login_time
+                else None,
+
+            "logout_time":
+                str(
+                    attendance.logout_time
+                )
+                if attendance.logout_time
+                else None,
+
+            "working_seconds":
+                attendance.working_seconds,
+
+            "lunch_seconds":
+                attendance.lunch_seconds,
+
+            "lunch_start_time":
+                str(
+                    attendance.lunch_start_time
+                )
+                if attendance.lunch_start_time
+                else None,
+
+            "lunch_end_time":
+                str(
+                    attendance.lunch_end_time
+                )
+                if attendance.lunch_end_time
+                else None,
+
+            "status":
+                attendance.status
+        }
+
+    }), 200
+
+
+# ============================================================
+# ATTENDANCE MANAGEMENT / LIST
+#
+# SUPER ADMIN:
+#     Full access
+#
+# HR:
+#     Requires hr_attendance permission
+#
+# EMPLOYEE:
+#     Own records only
+# ============================================================
 
 @attendance_bp.route(
     "/api/attendance",
@@ -489,14 +931,73 @@ def get_today_attendance(employee_id):
 )
 def get_attendance():
 
-    employee_id = request.args.get("employee_id", type=int)
+    current_employee_id, role = (
+        get_current_user_context()
+    )
 
-    query = Attendance.query
-
-    if employee_id:
-        query = query.filter(
-            Attendance.employee_id == employee_id
+    requested_employee_id = (
+        request.args.get(
+            "employee_id",
+            type=int
         )
+    )
+
+    # --------------------------------------------------------
+    # Employee
+    # --------------------------------------------------------
+
+    if role.lower() == "employee":
+
+        if requested_employee_id is None:
+
+            return jsonify({
+                "success": False,
+                "message":
+                    "employee_id is required."
+            }), 403
+
+        if not is_same_employee(
+            current_employee_id,
+            requested_employee_id
+        ):
+
+            return jsonify({
+                "success": False,
+                "message":
+                    "Access denied. You can only view your own attendance."
+            }), 403
+
+        query = Attendance.query.filter(
+            Attendance.employee_id
+            == current_employee_id
+        )
+
+    # --------------------------------------------------------
+    # Super Admin / HR
+    # --------------------------------------------------------
+
+    else:
+
+        if not can_manage_attendance(role):
+
+            return jsonify({
+                "success": False,
+                "message":
+                    "Access denied. Attendance permission is required."
+            }), 403
+
+        query = Attendance.query
+
+        if requested_employee_id:
+
+            query = query.filter(
+                Attendance.employee_id
+                == requested_employee_id
+            )
+
+    # --------------------------------------------------------
+    # Fetch records
+    # --------------------------------------------------------
 
     records = query.order_by(
         Attendance.attendance_date.desc(),
@@ -507,63 +1008,123 @@ def get_attendance():
 
     for record in records:
 
-        employee = Employee.query.get(record.employee_id)
-
+        employee = Employee.query.get(
+            record.employee_id
+        )
 
         department = None
         designation = None
+        branch = None
+        shift = None
 
         if employee and employee.department_id:
+
             department = Department.query.get(
-            employee.department_id
+                employee.department_id
             )
 
         if employee and employee.designation_id:
+
             designation = Designation.query.get(
-            employee.designation_id
-        )
-        
-        branch = None
+                employee.designation_id
+            )
 
         if employee and employee.branch_id:
-            branch = Branch.query.get(employee.branch_id)
 
-        shift = None
+            branch = Branch.query.get(
+                employee.branch_id
+            )
+
         if employee and employee.shift_id:
-            shift = Shift.query.get(employee.shift_id)
+
+            shift = Shift.query.get(
+                employee.shift_id
+            )
 
         attendance.append({
-            "attendance_id": record.attendance_id,
-            "employee_id": record.employee_id,
 
-            "employee_name": employee.full_name if employee else None,
-            "employee_code": employee.employee_code if employee else None,
+            "attendance_id":
+                record.attendance_id,
 
-            "department_name": department.department_name if department else None,
-            "designation_name": designation.designation_name if designation else None,
-    
+            "employee_id":
+                record.employee_id,
 
-            "branch_id": employee.branch_id if employee else None,
-            "branch_name": branch.branch_name if branch else None,
+            "employee_name":
+                employee.full_name
+                if employee
+                else None,
 
-            "role": employee.role if employee else None,
+            "employee_code":
+                employee.employee_code
+                if employee
+                else None,
 
-            "shift_name": shift.shift_name if shift else None,
+            "department_name":
+                department.department_name
+                if department
+                else None,
 
-            "attendance_date": str(record.attendance_date),
+            "designation_name":
+                designation.designation_name
+                if designation
+                else None,
 
-            "login_time": str(record.login_time) if record.login_time else None,
-            "logout_time": str(record.logout_time) if record.logout_time else None,
+            "branch_id":
+                employee.branch_id
+                if employee
+                else None,
 
-            "working_seconds": record.working_seconds,
-            "lunch_seconds": record.lunch_seconds,
+            "branch_name":
+                branch.branch_name
+                if branch
+                else None,
 
-            "lunch_start_time": str(record.lunch_start_time) if record.lunch_start_time else None,
-            "lunch_end_time": str(record.lunch_end_time) if record.lunch_end_time else None,
-            
-            "status": record.status,
+            "role":
+                employee.role
+                if employee
+                else None,
+
+            "shift_name":
+                shift.shift_name
+                if shift
+                else None,
+
+            "attendance_date":
+                str(
+                    record.attendance_date
+                ),
+
+            "login_time":
+                str(record.login_time)
+                if record.login_time
+                else None,
+
+            "logout_time":
+                str(record.logout_time)
+                if record.logout_time
+                else None,
+
+            "working_seconds":
+                record.working_seconds,
+
+            "lunch_seconds":
+                record.lunch_seconds,
+
+            "lunch_start_time":
+                str(record.lunch_start_time)
+                if record.lunch_start_time
+                else None,
+
+            "lunch_end_time":
+                str(record.lunch_end_time)
+                if record.lunch_end_time
+                else None,
+
+            "status":
+                record.status,
         })
 
     return jsonify({
+        "success": True,
         "attendance": attendance
-    })
+    }), 200

@@ -57,6 +57,8 @@ def create_app():
     from app.routes.designation_routes import designation_bp
     from app.routes.shift_routes import shift_bp
     from app.routes.import_routes import import_bp
+    from app.routes.permission_routes import permission_bp
+    
     
 
     app.register_blueprint(department_bp)
@@ -72,5 +74,7 @@ def create_app():
     app.register_blueprint(designation_bp)
     app.register_blueprint(import_bp)
     app.register_blueprint(access_control_bp)
+    app.register_blueprint(permission_bp)
+    
 
     return app

@@ -1,4 +1,5 @@
 from flask import Blueprint, jsonify
+from flask_jwt_extended import verify_jwt_in_request, get_jwt
 
 from app.models.employee import Employee
 from app.models.branch import Branch
@@ -7,15 +8,67 @@ from app.models.leave_request import LeaveRequest
 from app.models.payroll import Payroll
 from app.models.attendance import Attendance
 
+from app.utils.authorization import has_permission
+
 from datetime import date
+
 
 dashboard_bp = Blueprint(
     "dashboard_bp",
     __name__
 )
 
-@dashboard_bp.route("/api/dashboard/summary", methods=["GET"])
+
+# =========================================================
+# AUTHORIZATION
+# =========================================================
+
+def require_dashboard_access():
+
+    verify_jwt_in_request()
+
+    claims = get_jwt()
+
+    role = str(
+        claims.get("role", "")
+    ).strip().lower()
+
+    # Super Admin has unrestricted dashboard access
+    if role == "super admin":
+        return True
+
+    # HR requires Dashboard permission
+    if role == "hr":
+        return has_permission(
+            "hr",
+            "hr_dashboard"
+        )
+
+    # Employees do not have management dashboard API access
+    return False
+
+
+def dashboard_access_denied():
+
+    return jsonify({
+        "success": False,
+        "message":
+            "Access denied. Dashboard management permission is required."
+    }), 403
+
+
+# =========================================================
+# DASHBOARD SUMMARY
+# =========================================================
+
+@dashboard_bp.route(
+    "/api/dashboard/summary",
+    methods=["GET"]
+)
 def dashboard_summary():
+
+    if not require_dashboard_access():
+        return dashboard_access_denied()
 
     total_employees = Employee.query.count()
 
@@ -34,16 +87,40 @@ def dashboard_summary():
     payroll_records = Payroll.query.count()
 
     return jsonify({
-        "total_employees": total_employees,
-        "total_branches": total_branches,
-        "total_departments": total_departments,
-        "today_attendance": today_attendance,
-        "pending_leaves": pending_leaves,
-        "payroll_records": payroll_records
-    })
 
-@dashboard_bp.route("/api/dashboard/leaves", methods=["GET"])
+        "total_employees":
+            total_employees,
+
+        "total_branches":
+            total_branches,
+
+        "total_departments":
+            total_departments,
+
+        "today_attendance":
+            today_attendance,
+
+        "pending_leaves":
+            pending_leaves,
+
+        "payroll_records":
+            payroll_records
+
+    }), 200
+
+
+# =========================================================
+# DASHBOARD LEAVES
+# =========================================================
+
+@dashboard_bp.route(
+    "/api/dashboard/leaves",
+    methods=["GET"]
+)
 def dashboard_leaves():
+
+    if not require_dashboard_access():
+        return dashboard_access_denied()
 
     leaves = LeaveRequest.query.all()
 
@@ -52,19 +129,45 @@ def dashboard_leaves():
     for leave in leaves:
 
         result.append({
-            "leave_id": leave.leave_id,
-            "employee_id": leave.employee_id,
-            "leave_type": leave.leave_type,
-            "start_date": str(leave.start_date),
-            "end_date": str(leave.end_date),
-            "reason": leave.reason,
-            "status": leave.status
+
+            "leave_id":
+                leave.leave_id,
+
+            "employee_id":
+                leave.employee_id,
+
+            "leave_type":
+                leave.leave_type,
+
+            "start_date":
+                str(leave.start_date),
+
+            "end_date":
+                str(leave.end_date),
+
+            "reason":
+                leave.reason,
+
+            "status":
+                leave.status
+
         })
 
-    return jsonify(result)
+    return jsonify(result), 200
 
-@dashboard_bp.route("/api/dashboard/attendance", methods=["GET"])
+
+# =========================================================
+# DASHBOARD ATTENDANCE
+# =========================================================
+
+@dashboard_bp.route(
+    "/api/dashboard/attendance",
+    methods=["GET"]
+)
 def dashboard_attendance():
+
+    if not require_dashboard_access():
+        return dashboard_access_denied()
 
     records = Attendance.query.all()
 
@@ -73,19 +176,45 @@ def dashboard_attendance():
     for record in records:
 
         result.append({
-            "attendance_id": record.attendance_id,
-            "employee_id": record.employee_id,
-            "attendance_date": str(record.attendance_date),
-            "login_time": str(record.login_time),
-            "logout_time": str(record.logout_time),
-            "working_hours": record.working_hours,
-            "status": record.status
+
+            "attendance_id":
+                record.attendance_id,
+
+            "employee_id":
+                record.employee_id,
+
+            "attendance_date":
+                str(record.attendance_date),
+
+            "login_time":
+                str(record.login_time),
+
+            "logout_time":
+                str(record.logout_time),
+
+            "working_hours":
+                record.working_hours,
+
+            "status":
+                record.status
+
         })
 
-    return jsonify(result)
+    return jsonify(result), 200
 
-@dashboard_bp.route("/api/dashboard/payroll", methods=["GET"])
+
+# =========================================================
+# DASHBOARD PAYROLL
+# =========================================================
+
+@dashboard_bp.route(
+    "/api/dashboard/payroll",
+    methods=["GET"]
+)
 def dashboard_payroll():
+
+    if not require_dashboard_access():
+        return dashboard_access_denied()
 
     payrolls = Payroll.query.all()
 
@@ -94,14 +223,31 @@ def dashboard_payroll():
     for payroll in payrolls:
 
         result.append({
-            "payroll_id": payroll.payroll_id,
-            "employee_id": payroll.employee_id,
-            "basic_salary": payroll.basic_salary,
-            "allowances": payroll.allowances,
-            "deductions": payroll.deductions,
-            "net_salary": payroll.net_salary,
-            "month": payroll.month,
-            "year": payroll.year
+
+            "payroll_id":
+                payroll.payroll_id,
+
+            "employee_id":
+                payroll.employee_id,
+
+            "basic_salary":
+                payroll.basic_salary,
+
+            "allowances":
+                payroll.allowances,
+
+            "deductions":
+                payroll.deductions,
+
+            "net_salary":
+                payroll.net_salary,
+
+            "month":
+                payroll.month,
+
+            "year":
+                payroll.year
+
         })
 
-    return jsonify(result)
+    return jsonify(result), 200

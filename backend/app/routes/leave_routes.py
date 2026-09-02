@@ -1,6 +1,7 @@
 from datetime import datetime
 
 from flask import Blueprint, jsonify, request
+from flask_jwt_extended import verify_jwt_in_request, get_jwt
 
 from app import db
 from app.models.department import Department
@@ -8,6 +9,8 @@ from app.models.designation import Designation
 from app.models.employee import Employee
 from app.models.branch import Branch
 from app.models.leave_request import LeaveRequest
+from app.utils.authorization import has_permission
+
 
 leave_bp = Blueprint(
     "leave_bp",
@@ -15,18 +18,106 @@ leave_bp = Blueprint(
 )
 
 
-def parse_date(value):
+# =========================================================
+# AUTHORIZATION HELPERS
+# =========================================================
+
+def get_current_user():
+    """
+    Returns the current JWT claims.
+    """
+    verify_jwt_in_request()
+    return get_jwt()
+
+
+def get_current_employee_id():
+    """
+    JWT identity is the employee_id.
+    """
+    verify_jwt_in_request()
+
+    claims = get_jwt()
+
     try:
-        return datetime.strptime(value, "%Y-%m-%d").date()
+        return int(claims.get("sub"))
+    except (TypeError, ValueError):
+        return None
+
+
+def get_current_role():
+    """
+    Returns normalized role from JWT.
+    """
+    verify_jwt_in_request()
+
+    claims = get_jwt()
+
+    return str(
+        claims.get("role", "")
+    ).strip().lower()
+
+
+def require_management_leave_access():
+    """
+    Super Admin:
+        Full leave management access.
+
+    HR:
+        Requires hr_leaves permission.
+
+    Employee:
+        No management access.
+    """
+
+    role = get_current_role()
+
+    if role == "super admin":
+        return True
+
+    if role == "hr":
+        if has_permission(
+            "hr",
+            "hr_leaves"
+        ):
+            return True
+
+        return False
+
+    return False
+
+
+def management_access_denied():
+    return jsonify({
+        "success": False,
+        "message": "Access denied. Leave management permission is required."
+    }), 403
+
+
+# =========================================================
+# HELPERS
+# =========================================================
+
+def parse_date(value):
+
+    try:
+        return datetime.strptime(
+            value,
+            "%Y-%m-%d"
+        ).date()
+
     except Exception:
         return None
 
 
 def get_department_name(employee):
+
     if not employee or not employee.department_id:
         return None
 
-    department = Department.query.get(employee.department_id)
+    department = Department.query.get(
+        employee.department_id
+    )
+
     return (
         department.department_name
         if department
@@ -35,6 +126,7 @@ def get_department_name(employee):
 
 
 def get_designation_name(employee):
+
     if not employee or not employee.designation_id:
         return None
 
@@ -50,7 +142,6 @@ def get_designation_name(employee):
 
 
 def serialize_leave(leave):
-    
 
     employee = Employee.query.get(
         leave.employee_id
@@ -59,7 +150,9 @@ def serialize_leave(leave):
     branch = None
 
     if employee and employee.branch_id:
-        branch = Branch.query.get(employee.branch_id)   
+        branch = Branch.query.get(
+            employee.branch_id
+        )
 
     total_days = (
         (leave.end_date - leave.start_date).days
@@ -68,9 +161,11 @@ def serialize_leave(leave):
 
     return {
 
-        "leave_id": leave.leave_id,
+        "leave_id":
+            leave.leave_id,
 
-        "employee_id": leave.employee_id,
+        "employee_id":
+            leave.employee_id,
 
         "employee_code":
             employee.employee_code
@@ -122,17 +217,45 @@ def serialize_leave(leave):
     }
 
 
+# =========================================================
+# APPLY LEAVE
+# =========================================================
+
 @leave_bp.route(
     "/api/leaves/apply",
     methods=["POST"]
 )
 def apply_leave():
 
-    data = request.get_json()
+    role = get_current_role()
+    current_employee_id = get_current_employee_id()
 
-    employee_id = data.get(
+    data = request.get_json() or {}
+
+    requested_employee_id = data.get(
         "employee_id"
     )
+
+    # -----------------------------------------------------
+    # EMPLOYEE CAN ONLY APPLY FOR THEMSELVES
+    # -----------------------------------------------------
+
+    if role == "employee":
+
+        if (
+            requested_employee_id is None
+            or int(requested_employee_id) != current_employee_id
+        ):
+            return jsonify({
+                "success": False,
+                "message": "Employees can only apply leave for themselves."
+            }), 403
+
+        employee_id = current_employee_id
+
+    else:
+
+        employee_id = requested_employee_id
 
     employee = Employee.query.get(
         employee_id
@@ -145,19 +268,31 @@ def apply_leave():
         }), 404
 
     leave_type = str(
-        data.get("leave_type", "")
+        data.get(
+            "leave_type",
+            ""
+        )
     ).strip()
 
     reason = str(
-        data.get("reason", "")
+        data.get(
+            "reason",
+            ""
+        )
     ).strip()
 
     start_date = parse_date(
-        data.get("start_date", "")
+        data.get(
+            "start_date",
+            ""
+        )
     )
 
     end_date = parse_date(
-        data.get("end_date", "")
+        data.get(
+            "end_date",
+            ""
+        )
     )
 
     if not leave_type:
@@ -248,11 +383,18 @@ def apply_leave():
     }), 201
 
 
+# =========================================================
+# GET LEAVES
+# =========================================================
+
 @leave_bp.route(
     "/api/leaves",
     methods=["GET"]
 )
 def get_all_leaves():
+
+    role = get_current_role()
+    current_employee_id = get_current_employee_id()
 
     employee_id = request.args.get(
         "employee_id"
@@ -262,12 +404,50 @@ def get_all_leaves():
         "status"
     )
 
-    query = LeaveRequest.query
+    # -----------------------------------------------------
+    # EMPLOYEE -> OWN RECORDS ONLY
+    # -----------------------------------------------------
 
-    if employee_id:
-        query = query.filter(
-            LeaveRequest.employee_id == employee_id
+    if role == "employee":
+
+        query = LeaveRequest.query.filter(
+            LeaveRequest.employee_id == current_employee_id
         )
+
+    # -----------------------------------------------------
+    # MANAGEMENT -> FULL ACCESS WITH HR PERMISSION
+    # -----------------------------------------------------
+
+    elif role == "super admin":
+
+        query = LeaveRequest.query
+
+        if employee_id:
+            query = query.filter(
+                LeaveRequest.employee_id == employee_id
+            )
+
+    elif role == "hr":
+
+        if not has_permission(
+            "hr",
+            "hr_leaves"
+        ):
+            return management_access_denied()
+
+        query = LeaveRequest.query
+
+        if employee_id:
+            query = query.filter(
+                LeaveRequest.employee_id == employee_id
+            )
+
+    else:
+
+        return jsonify({
+            "success": False,
+            "message": "Access denied."
+        }), 403
 
     if status:
         query = query.filter(
@@ -282,7 +462,8 @@ def get_all_leaves():
 
         "success": True,
 
-        "count": len(leaves),
+        "count":
+            len(leaves),
 
         "leaves": [
             serialize_leave(leave)
@@ -291,13 +472,23 @@ def get_all_leaves():
 
     }), 200
 
+
+# =========================================================
+# LEAVE DETAILS
+# =========================================================
+
 @leave_bp.route(
     "/api/leaves/<int:leave_id>",
     methods=["GET"]
 )
 def get_leave_details(leave_id):
 
-    leave = LeaveRequest.query.get(leave_id)
+    role = get_current_role()
+    current_employee_id = get_current_employee_id()
+
+    leave = LeaveRequest.query.get(
+        leave_id
+    )
 
     if not leave:
         return jsonify({
@@ -305,11 +496,41 @@ def get_leave_details(leave_id):
             "message": "Leave request not found."
         }), 404
 
+    # Employee can only view own leave
+    if role == "employee":
+
+        if leave.employee_id != current_employee_id:
+
+            return jsonify({
+                "success": False,
+                "message": "Access denied."
+            }), 403
+
+    # HR needs leave permission
+    elif role == "hr":
+
+        if not has_permission(
+            "hr",
+            "hr_leaves"
+        ):
+            return management_access_denied()
+
+    elif role != "super admin":
+
+        return jsonify({
+            "success": False,
+            "message": "Access denied."
+        }), 403
+
     return jsonify({
         "success": True,
         "leave": serialize_leave(leave)
     }), 200
 
+
+# =========================================================
+# APPROVE LEAVE
+# =========================================================
 
 @leave_bp.route(
     "/api/leaves/<int:leave_id>/approve",
@@ -317,7 +538,12 @@ def get_leave_details(leave_id):
 )
 def approve_leave(leave_id):
 
-    leave = LeaveRequest.query.get(leave_id)
+    if not require_management_leave_access():
+        return management_access_denied()
+
+    leave = LeaveRequest.query.get(
+        leave_id
+    )
 
     if not leave:
         return jsonify({
@@ -326,12 +552,14 @@ def approve_leave(leave_id):
         }), 404
 
     if leave.status == "Approved":
+
         return jsonify({
             "success": False,
             "message": "Leave request is already approved."
         }), 400
 
     if leave.status == "Rejected":
+
         return jsonify({
             "success": False,
             "message": "Rejected leave cannot be approved."
@@ -342,6 +570,7 @@ def approve_leave(leave_id):
     )
 
     if not employee:
+
         return jsonify({
             "success": False,
             "message": "Employee not found."
@@ -353,6 +582,7 @@ def approve_leave(leave_id):
     ).days + 1
 
     if employee.leave_balance < total_days:
+
         return jsonify({
             "success": False,
             "message": "Insufficient leave balance."
@@ -380,29 +610,39 @@ def approve_leave(leave_id):
     }), 200
 
 
+# =========================================================
+# REJECT LEAVE
+# =========================================================
+
 @leave_bp.route(
     "/api/leaves/<int:leave_id>/reject",
     methods=["PUT"]
 )
 def reject_leave(leave_id):
 
+    if not require_management_leave_access():
+        return management_access_denied()
+
     leave = LeaveRequest.query.get(
         leave_id
     )
 
     if not leave:
+
         return jsonify({
             "success": False,
             "message": "Leave request not found."
         }), 404
 
     if leave.status == "Rejected":
+
         return jsonify({
             "success": False,
             "message": "Leave request is already rejected."
         }), 400
 
     if leave.status == "Approved":
+
         return jsonify({
             "success": False,
             "message":
@@ -426,27 +666,65 @@ def reject_leave(leave_id):
     }), 200
 
 
+# =========================================================
+# CANCEL LEAVE
+# =========================================================
+
 @leave_bp.route(
     "/api/leaves/<int:leave_id>/cancel",
     methods=["PUT"]
 )
 def cancel_leave(leave_id):
 
+    role = get_current_role()
+    current_employee_id = get_current_employee_id()
+
     leave = LeaveRequest.query.get(
         leave_id
     )
 
     if not leave:
+
         return jsonify({
             "success": False,
             "message": "Leave request not found."
         }), 404
+
+    # -----------------------------------------------------
+    # EMPLOYEE -> OWN LEAVE ONLY
+    # -----------------------------------------------------
+
+    if role == "employee":
+
+        if leave.employee_id != current_employee_id:
+
+            return jsonify({
+                "success": False,
+                "message": "You can only cancel your own leave."
+            }), 403
+
+    # HR requires permission
+    elif role == "hr":
+
+        if not has_permission(
+            "hr",
+            "hr_leaves"
+        ):
+            return management_access_denied()
+
+    elif role != "super admin":
+
+        return jsonify({
+            "success": False,
+            "message": "Access denied."
+        }), 403
 
     employee = Employee.query.get(
         leave.employee_id
     )
 
     if not employee:
+
         return jsonify({
             "success": False,
             "message": "Employee not found."
@@ -461,7 +739,9 @@ def cancel_leave(leave_id):
 
         employee.leave_balance += total_days
 
-    db.session.delete(leave)
+    db.session.delete(
+        leave
+    )
 
     db.session.commit()
 
@@ -477,11 +757,19 @@ def cancel_leave(leave_id):
 
     }), 200
 
+
+# =========================================================
+# LEAVE SUMMARY
+# =========================================================
+
 @leave_bp.route(
     "/api/leaves/summary",
     methods=["GET"]
 )
 def leave_summary():
+
+    if not require_management_leave_access():
+        return management_access_denied()
 
     total = LeaveRequest.query.count()
 
@@ -498,21 +786,40 @@ def leave_summary():
     ).count()
 
     return jsonify({
+
         "success": True,
+
         "summary": {
-            "total": total,
-            "pending": pending,
-            "approved": approved,
-            "rejected": rejected
+
+            "total":
+                total,
+
+            "pending":
+                pending,
+
+            "approved":
+                approved,
+
+            "rejected":
+                rejected
+
         }
+
     }), 200
 
+
+# =========================================================
+# SEARCH LEAVES
+# =========================================================
 
 @leave_bp.route(
     "/api/leaves/search",
     methods=["GET"]
 )
 def search_leaves():
+
+    if not require_management_leave_access():
+        return management_access_denied()
 
     employee_code = request.args.get(
         "employee_code",
@@ -545,6 +852,7 @@ def search_leaves():
         ).first()
 
         if not employee:
+
             return jsonify({
                 "success": True,
                 "count": 0,
@@ -552,7 +860,8 @@ def search_leaves():
             }), 200
 
         query = query.filter(
-            LeaveRequest.employee_id == employee.employee_id
+            LeaveRequest.employee_id ==
+            employee.employee_id
         )
 
     if employee_name:
@@ -569,6 +878,7 @@ def search_leaves():
         ]
 
         if not employee_ids:
+
             return jsonify({
                 "success": True,
                 "count": 0,
@@ -576,7 +886,9 @@ def search_leaves():
             }), 200
 
         query = query.filter(
-            LeaveRequest.employee_id.in_(employee_ids)
+            LeaveRequest.employee_id.in_(
+                employee_ids
+            )
         )
 
     if status:
@@ -599,7 +911,8 @@ def search_leaves():
 
         "success": True,
 
-        "count": len(leaves),
+        "count":
+            len(leaves),
 
         "leaves": [
             serialize_leave(leave)
@@ -609,17 +922,54 @@ def search_leaves():
     }), 200
 
 
+# =========================================================
+# LEAVE BALANCE
+# =========================================================
+
 @leave_bp.route(
     "/api/leaves/balance/<int:employee_id>",
     methods=["GET"]
 )
 def get_leave_balance(employee_id):
 
+    role = get_current_role()
+    current_employee_id = get_current_employee_id()
+
+    # -----------------------------------------------------
+    # EMPLOYEE -> OWN BALANCE ONLY
+    # -----------------------------------------------------
+
+    if role == "employee":
+
+        if employee_id != current_employee_id:
+
+            return jsonify({
+                "success": False,
+                "message": "Access denied."
+            }), 403
+
+    # HR requires leave permission
+    elif role == "hr":
+
+        if not has_permission(
+            "hr",
+            "hr_leaves"
+        ):
+            return management_access_denied()
+
+    elif role != "super admin":
+
+        return jsonify({
+            "success": False,
+            "message": "Access denied."
+        }), 403
+
     employee = Employee.query.get(
         employee_id
     )
 
     if not employee:
+
         return jsonify({
             "success": False,
             "message": "Employee not found."
@@ -678,11 +1028,18 @@ def get_leave_balance(employee_id):
     }), 200
 
 
+# =========================================================
+# LEAVE TYPES
+# =========================================================
+
 @leave_bp.route(
     "/api/leaves/types",
     methods=["GET"]
 )
 def leave_types():
+
+    # Leave types are available to authenticated users.
+    verify_jwt_in_request()
 
     return jsonify({
 
