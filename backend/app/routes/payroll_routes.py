@@ -1,6 +1,7 @@
 from datetime import date
 
 from flask import Blueprint, request, jsonify
+
 from flask_jwt_extended import (
     get_jwt,
     get_jwt_identity,
@@ -58,6 +59,8 @@ def can_manage_payroll(role):
 
     HR requires the database-controlled
     hr_payroll permission.
+
+    Employee has no payroll management access.
     """
 
     if is_super_admin(role):
@@ -65,11 +68,19 @@ def can_manage_payroll(role):
 
     if role.lower() == "hr":
         return has_permission(
-            role,
+            "hr",
             "hr_payroll"
         )
 
     return False
+
+
+def payroll_management_denied():
+    return jsonify({
+        "success": False,
+        "message":
+            "Access denied. Payroll permission is required."
+    }), 403
 
 
 # ============================================================
@@ -87,10 +98,7 @@ def create_payroll():
 
     if not can_manage_payroll(role):
 
-        return jsonify({
-            "success": False,
-            "message": "Access denied. Payroll permission is required."
-        }), 403
+        return payroll_management_denied()
 
     data = request.get_json() or {}
 
@@ -126,9 +134,11 @@ def create_payroll():
     # --------------------------------------------------------
 
     try:
+
         employee_id = int(
             data["employee_id"]
         )
+
     except (TypeError, ValueError):
 
         return jsonify({
@@ -152,6 +162,7 @@ def create_payroll():
     # --------------------------------------------------------
 
     try:
+
         basic_salary = float(
             data["basic_salary"]
         )
@@ -168,28 +179,32 @@ def create_payroll():
 
         return jsonify({
             "success": False,
-            "message": "Salary values must be valid numbers."
+            "message":
+                "Salary values must be valid numbers."
         }), 400
 
     if basic_salary < 0:
 
         return jsonify({
             "success": False,
-            "message": "Basic salary cannot be negative."
+            "message":
+                "Basic salary cannot be negative."
         }), 400
 
     if allowances < 0:
 
         return jsonify({
             "success": False,
-            "message": "Allowances cannot be negative."
+            "message":
+                "Allowances cannot be negative."
         }), 400
 
     if deductions < 0:
 
         return jsonify({
             "success": False,
-            "message": "Deductions cannot be negative."
+            "message":
+                "Deductions cannot be negative."
         }), 400
 
     # --------------------------------------------------------
@@ -240,8 +255,10 @@ def create_payroll():
 
     return jsonify({
         "success": True,
-        "message": "Payroll created successfully",
-        "net_salary": net_salary
+        "message":
+            "Payroll created successfully",
+        "net_salary":
+            net_salary
     }), 201
 
 
@@ -252,7 +269,8 @@ def create_payroll():
 #     Full access
 #
 # HR:
-#     Requires hr_payroll permission
+#     Own payroll always accessible
+#     Other payroll requires hr_payroll permission
 #
 # EMPLOYEE:
 #     Own payroll only
@@ -268,21 +286,18 @@ def get_payroll():
         get_current_user_context()
     )
 
-    # --------------------------------------------------------
-    # Requested employee
-    # --------------------------------------------------------
-
-    requested_employee_id = (
-        request.args.get("employee_id")
+    requested_employee_id = request.args.get(
+        "employee_id"
     )
 
+    normalized_role = role.lower()
+
     # --------------------------------------------------------
-    # Employee access
-        #
-        # Employees can ONLY request their own payroll.
+    # EMPLOYEE
+    # Own payroll only
     # --------------------------------------------------------
 
-    if role.lower() == "employee":
+    if normalized_role == "employee":
 
         if not requested_employee_id:
 
@@ -311,18 +326,71 @@ def get_payroll():
         )
 
     # --------------------------------------------------------
-    # Super Admin / HR management access
+    # HR
+    #
+    # HR can always view their own payroll.
+    #
+    # HR permission is required for:
+    # - Other employees' payroll
+    # - Full payroll management list
     # --------------------------------------------------------
 
-    else:
+    elif normalized_role == "hr":
 
-        if not can_manage_payroll(role):
+        if requested_employee_id:
 
-            return jsonify({
-                "success": False,
-                "message":
-                    "Access denied. Payroll permission is required."
-            }), 403
+            # ------------------------------------------------
+            # HR viewing OWN payroll
+            # ------------------------------------------------
+
+            if str(requested_employee_id) == str(
+                current_employee_id
+            ):
+
+                payrolls = (
+                    Payroll.query
+                    .filter_by(
+                        employee_id=current_employee_id
+                    )
+                    .all()
+                )
+
+            # ------------------------------------------------
+            # HR viewing ANOTHER employee's payroll
+            # ------------------------------------------------
+
+            else:
+
+                if not can_manage_payroll(role):
+
+                    return payroll_management_denied()
+
+                payrolls = (
+                    Payroll.query
+                    .filter_by(
+                        employee_id=requested_employee_id
+                    )
+                    .all()
+                )
+
+        # ----------------------------------------------------
+        # HR requesting the complete payroll list
+        # ----------------------------------------------------
+
+        else:
+
+            if not can_manage_payroll(role):
+
+                return payroll_management_denied()
+
+            payrolls = Payroll.query.all()
+
+    # --------------------------------------------------------
+    # SUPER ADMIN
+    # Full access
+    # --------------------------------------------------------
+
+    elif is_super_admin(role):
 
         if requested_employee_id:
 
@@ -337,6 +405,18 @@ def get_payroll():
         else:
 
             payrolls = Payroll.query.all()
+
+    # --------------------------------------------------------
+    # UNKNOWN ROLE
+    # --------------------------------------------------------
+
+    else:
+
+        return jsonify({
+            "success": False,
+            "message":
+                "Access denied."
+        }), 403
 
     # --------------------------------------------------------
     # Build response
@@ -462,11 +542,7 @@ def mark_paid(id):
 
     if not can_manage_payroll(role):
 
-        return jsonify({
-            "success": False,
-            "message":
-                "Access denied. Payroll permission is required."
-        }), 403
+        return payroll_management_denied()
 
     payroll = Payroll.query.get_or_404(id)
 

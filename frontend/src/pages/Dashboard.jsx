@@ -51,14 +51,14 @@ const formatTimer = (totalSeconds) => {
 };
 
 export default function Dashboard() {
-  const { user } = useAuth();
+  const {user, hasPermission,} = useAuth();
   const navigate = useNavigate();
   const role = user?.role || "Employee";
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [employees, setEmployees] = useState([]);
-  const [attendance, setAttendance] = useState([]);
+  const [attendance, setAttendance] = useState([]); 
   const [leaves, setLeaves] = useState([]);
   const [payroll, setPayroll] = useState([]);
   const [announcements, setAnnouncements] = useState([]);
@@ -114,27 +114,69 @@ export default function Dashboard() {
         fetchTodayAttendance(user.employee_id),
       ]);
     } else {
-      // ---------------------------------------------------
-      // HR / SUPER ADMIN DASHBOARD
-      // Management-level data.
-      // ---------------------------------------------------
 
-      [
-        employeesData,
-        attendanceData,
-        leavesData,
-        payrollData,
-        announcementsData,
-        todayData,
-      ] = await Promise.all([
-        fetchEmployees(),
-        fetchAttendance(),
-        fetchLeaves(),
-        fetchPayroll(),
-        fetchAnnouncements(),
-        fetchTodayAttendance(user.employee_id),
-      ]);
-    }
+  const isSuperAdmin =
+    role === "Super Admin";
+
+  const canEmployees =
+    isSuperAdmin ||
+    hasPermission("hr_depot_employees");
+
+  const canAttendance =
+    isSuperAdmin ||
+    hasPermission("hr_attendance");
+
+  const canLeaves =
+    isSuperAdmin ||
+    hasPermission("hr_leaves");
+
+  const canPayroll =
+    isSuperAdmin ||
+    hasPermission("hr_payroll");
+
+  [
+    employeesData,
+    attendanceData,
+    leavesData,
+    payrollData,
+    announcementsData,
+    todayData,
+  ] = await Promise.all([
+
+    canEmployees
+      ? fetchEmployees()
+      : Promise.resolve({
+          employees: [],
+        }),
+
+    canAttendance
+      ? fetchAttendance()
+      : Promise.resolve({
+          attendance: [],
+        }),
+
+    canLeaves
+      ? fetchLeaves()
+      : Promise.resolve({
+          leaves: [],
+        }),
+
+    canPayroll
+      ? fetchPayroll()
+      : Promise.resolve({
+          payroll: [],
+        }),
+
+    fetchAnnouncements(),
+
+    // Personal attendance is independent
+    // of HR attendance-management permission.
+    fetchTodayAttendance(
+      user.employee_id
+    ),
+
+  ]);
+}
 
     setEmployees(
       extractList(employeesData, "employees")

@@ -222,172 +222,6 @@ def serialize_leave(leave):
 # =========================================================
 
 @leave_bp.route(
-    "/api/leaves/apply",
-    methods=["POST"]
-)
-def apply_leave():
-
-    role = get_current_role()
-    current_employee_id = get_current_employee_id()
-
-    data = request.get_json() or {}
-
-    requested_employee_id = data.get(
-        "employee_id"
-    )
-
-    # -----------------------------------------------------
-    # EMPLOYEE CAN ONLY APPLY FOR THEMSELVES
-    # -----------------------------------------------------
-
-    if role == "employee":
-
-        if (
-            requested_employee_id is None
-            or int(requested_employee_id) != current_employee_id
-        ):
-            return jsonify({
-                "success": False,
-                "message": "Employees can only apply leave for themselves."
-            }), 403
-
-        employee_id = current_employee_id
-
-    else:
-
-        employee_id = requested_employee_id
-
-    employee = Employee.query.get(
-        employee_id
-    )
-
-    if not employee:
-        return jsonify({
-            "success": False,
-            "message": "Employee not found."
-        }), 404
-
-    leave_type = str(
-        data.get(
-            "leave_type",
-            ""
-        )
-    ).strip()
-
-    reason = str(
-        data.get(
-            "reason",
-            ""
-        )
-    ).strip()
-
-    start_date = parse_date(
-        data.get(
-            "start_date",
-            ""
-        )
-    )
-
-    end_date = parse_date(
-        data.get(
-            "end_date",
-            ""
-        )
-    )
-
-    if not leave_type:
-        return jsonify({
-            "success": False,
-            "message": "Leave type is required."
-        }), 400
-
-    if not reason:
-        return jsonify({
-            "success": False,
-            "message": "Reason is required."
-        }), 400
-
-    if not start_date or not end_date:
-        return jsonify({
-            "success": False,
-            "message": "Invalid leave dates."
-        }), 400
-
-    if end_date < start_date:
-        return jsonify({
-            "success": False,
-            "message": "End date cannot be before start date."
-        }), 400
-
-    total_days = (
-        end_date - start_date
-    ).days + 1
-
-    if total_days <= 0:
-        return jsonify({
-            "success": False,
-            "message": "Invalid duration."
-        }), 400
-
-    overlapping_leave = LeaveRequest.query.filter(
-
-        LeaveRequest.employee_id == employee_id,
-
-        LeaveRequest.status != "Rejected",
-
-        LeaveRequest.start_date <= end_date,
-
-        LeaveRequest.end_date >= start_date
-
-    ).first()
-
-    if overlapping_leave:
-
-        return jsonify({
-            "success": False,
-            "message":
-                "A leave request already exists for the selected dates."
-        }), 409
-
-    leave = LeaveRequest(
-
-        employee_id=employee.employee_id,
-
-        leave_type=leave_type,
-
-        start_date=start_date,
-
-        end_date=end_date,
-
-        reason=reason,
-
-        status="Pending"
-    )
-
-    db.session.add(
-        leave
-    )
-
-    db.session.commit()
-
-    return jsonify({
-
-        "success": True,
-
-        "message":
-            "Leave request submitted successfully.",
-
-        "leave":
-            serialize_leave(leave)
-
-    }), 201
-
-
-# =========================================================
-# GET LEAVES
-# =========================================================
-
-@leave_bp.route(
     "/api/leaves",
     methods=["GET"]
 )
@@ -396,16 +230,13 @@ def get_all_leaves():
     role = get_current_role()
     current_employee_id = get_current_employee_id()
 
-    employee_id = request.args.get(
-        "employee_id"
-    )
+    employee_id = request.args.get("employee_id")
 
-    status = request.args.get(
-        "status"
-    )
+    status = request.args.get("status")
 
     # -----------------------------------------------------
-    # EMPLOYEE -> OWN RECORDS ONLY
+    # EMPLOYEE
+    # Own records only
     # -----------------------------------------------------
 
     if role == "employee":
@@ -415,7 +246,8 @@ def get_all_leaves():
         )
 
     # -----------------------------------------------------
-    # MANAGEMENT -> FULL ACCESS WITH HR PERMISSION
+    # SUPER ADMIN
+    # Full access
     # -----------------------------------------------------
 
     elif role == "super admin":
@@ -427,20 +259,60 @@ def get_all_leaves():
                 LeaveRequest.employee_id == employee_id
             )
 
+    # -----------------------------------------------------
+    # HR
+    #
+    # HR can always view their own leaves.
+    # hr_leaves is required for management access.
+    # -----------------------------------------------------
+
     elif role == "hr":
 
-        if not has_permission(
-            "hr",
-            "hr_leaves"
-        ):
-            return management_access_denied()
-
-        query = LeaveRequest.query
-
         if employee_id:
-            query = query.filter(
-                LeaveRequest.employee_id == employee_id
-            )
+
+            # ---------------------------------------------
+            # HR viewing their OWN leaves
+            # ---------------------------------------------
+
+            if str(employee_id) == str(current_employee_id):
+
+                query = LeaveRequest.query.filter(
+                    LeaveRequest.employee_id == current_employee_id
+                )
+
+            # ---------------------------------------------
+            # HR viewing ANOTHER employee's leaves
+            # ---------------------------------------------
+
+            else:
+
+                if not has_permission(
+                    "hr",
+                    "hr_leaves"
+                ):
+                    return management_access_denied()
+
+                query = LeaveRequest.query.filter(
+                    LeaveRequest.employee_id == employee_id
+                )
+
+        # -----------------------------------------------
+        # No employee_id = Leave Management
+        # -----------------------------------------------
+
+        else:
+
+            if not has_permission(
+                "hr",
+                "hr_leaves"
+            ):
+                return management_access_denied()
+
+            query = LeaveRequest.query
+
+    # -----------------------------------------------------
+    # UNKNOWN ROLE
+    # -----------------------------------------------------
 
     else:
 
@@ -449,7 +321,12 @@ def get_all_leaves():
             "message": "Access denied."
         }), 403
 
+    # -----------------------------------------------------
+    # OPTIONAL STATUS FILTER
+    # -----------------------------------------------------
+
     if status:
+
         query = query.filter(
             LeaveRequest.status == status
         )
@@ -462,8 +339,7 @@ def get_all_leaves():
 
         "success": True,
 
-        "count":
-            len(leaves),
+        "count": len(leaves),
 
         "leaves": [
             serialize_leave(leave)
@@ -509,11 +385,16 @@ def get_leave_details(leave_id):
     # HR needs leave permission
     elif role == "hr":
 
-        if not has_permission(
-            "hr",
-            "hr_leaves"
-        ):
-            return management_access_denied()
+    # HR can view their own leave without
+    # Leave Management permission.
+
+        if leave.employee_id != current_employee_id:
+
+            if not has_permission(
+                "hr",
+                "hr_leaves"
+            ):
+                return management_access_denied()
 
     elif role != "super admin":
 
@@ -526,6 +407,221 @@ def get_leave_details(leave_id):
         "success": True,
         "leave": serialize_leave(leave)
     }), 200
+
+
+
+# =========================================================
+# APPLY LEAVE
+# =========================================================
+
+@leave_bp.route(
+    "/api/leaves/apply",
+    methods=["POST"]
+)
+def apply_leave():
+
+    role = get_current_role()
+    current_employee_id = get_current_employee_id()
+
+    data = request.get_json() or {}
+
+    employee_id = data.get("employee_id")
+
+    if not employee_id:
+        return jsonify({
+            "success": False,
+            "message": "Employee ID is required."
+        }), 400
+
+    try:
+        employee_id = int(employee_id)
+    except (TypeError, ValueError):
+        return jsonify({
+            "success": False,
+            "message": "Invalid employee ID."
+        }), 400
+
+    # -----------------------------------------------------
+    # EMPLOYEE
+    # Can apply only for themselves
+    # -----------------------------------------------------
+
+    if role == "employee":
+
+        if employee_id != current_employee_id:
+            return jsonify({
+                "success": False,
+                "message": "You can only apply leave for yourself."
+            }), 403
+
+    # -----------------------------------------------------
+    # HR
+    #
+    # HR can always apply for themselves.
+    # Applying for another employee requires hr_leaves.
+    # -----------------------------------------------------
+
+    elif role == "hr":
+
+        if employee_id != current_employee_id:
+
+            if not has_permission(
+                "hr",
+                "hr_leaves"
+            ):
+                return management_access_denied()
+
+    # -----------------------------------------------------
+    # SUPER ADMIN
+    # Full access
+    # -----------------------------------------------------
+
+    elif role == "super admin":
+
+        pass
+
+    # -----------------------------------------------------
+    # UNKNOWN ROLE
+    # -----------------------------------------------------
+
+    else:
+
+        return jsonify({
+            "success": False,
+            "message": "Access denied."
+        }), 403
+
+    employee = Employee.query.get(
+        employee_id
+    )
+
+    if not employee:
+        return jsonify({
+            "success": False,
+            "message": "Employee not found."
+        }), 404
+
+    leave_type = str(
+        data.get("leave_type", "")
+    ).strip()
+
+    reason = str(
+        data.get("reason", "")
+    ).strip()
+
+    start_date = parse_date(
+        data.get("start_date", "")
+    )
+
+    end_date = parse_date(
+        data.get("end_date", "")
+    )
+
+    # -----------------------------------------------------
+    # VALIDATION
+    # -----------------------------------------------------
+
+    if not leave_type:
+        return jsonify({
+            "success": False,
+            "message": "Leave type is required."
+        }), 400
+
+    if not reason:
+        return jsonify({
+            "success": False,
+            "message": "Reason is required."
+        }), 400
+
+    if not start_date or not end_date:
+        return jsonify({
+            "success": False,
+            "message": "Invalid leave dates."
+        }), 400
+
+    if end_date < start_date:
+        return jsonify({
+            "success": False,
+            "message": "End date cannot be before start date."
+        }), 400
+
+    total_days = (
+        end_date - start_date
+    ).days + 1
+
+    if total_days <= 0:
+        return jsonify({
+            "success": False,
+            "message": "Invalid duration."
+        }), 400
+
+    # -----------------------------------------------------
+    # OVERLAPPING LEAVE CHECK
+    # -----------------------------------------------------
+
+    overlapping_leave = LeaveRequest.query.filter(
+
+        LeaveRequest.employee_id == employee_id,
+
+        LeaveRequest.status != "Rejected",
+
+        LeaveRequest.start_date <= end_date,
+
+        LeaveRequest.end_date >= start_date
+
+    ).first()
+
+    if overlapping_leave:
+
+        return jsonify({
+            "success": False,
+            "message":
+                "A leave request already exists for the selected dates."
+        }), 409
+
+    # -----------------------------------------------------
+    # CREATE LEAVE
+    # -----------------------------------------------------
+
+    leave = LeaveRequest(
+
+        employee_id=employee.employee_id,
+
+        leave_type=leave_type,
+
+        start_date=start_date,
+
+        end_date=end_date,
+
+        reason=reason,
+
+        status="Pending"
+    )
+
+    db.session.add(
+        leave
+    )
+
+    db.session.commit()
+
+    return jsonify({
+
+        "success": True,
+
+        "message":
+            "Leave request submitted successfully.",
+
+        "leave":
+            serialize_leave(leave)
+
+    }), 201
+
+
+# =========================================================
+# GET ALL LEAVES
+# =========================================================
+
+
 
 
 # =========================================================
