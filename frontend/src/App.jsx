@@ -7,6 +7,7 @@ import RoleProtectedRoute from "./components/RoleProtectedRoute";
 import DashboardLayout from "./layouts/DashboardLayout";
 
 import Login from "./pages/Login";
+import MobileLocationVerification from "./pages/MobileLocationVerification";
 import Dashboard from "./pages/Dashboard";
 import Employees from "./pages/Employees";
 import Attendance from "./pages/Attendance";
@@ -61,6 +62,11 @@ export default function App() {
           <Route
             path="/login"
             element={<Login />}
+          />
+
+          <Route
+            path="/mobile-location-verification/:challengeId"
+            element={<MobileLocationVerification />}
           />
 
 

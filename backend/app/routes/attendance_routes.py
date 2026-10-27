@@ -2,11 +2,11 @@ from flask import (
     Blueprint,
     request,
     jsonify,
-    current_app,
     send_file,
 )
 from datetime import datetime, date, timedelta
 from io import BytesIO
+from math import isfinite
 
 from flask_jwt_extended import (
     get_jwt,
@@ -26,7 +26,14 @@ from app.models.shift import Shift
 from app.models.branch import Branch
 from app.models.department import Department
 from app.models.designation import Designation
-from app.services.gps_service import verify_employee_location
+from app.services.gps_service import (
+    is_employee_geofence_bypassed,
+    verify_employee_location,
+)
+from app.services.location_challenge_service import (
+    consume_completed_location_challenge,
+    consume_location_challenge,
+)
 from app.utils.authorization import has_permission
 
 
@@ -616,13 +623,6 @@ def employee_login():
         get_current_user_context()
     )
 
-    print(
-        "DEVELOPMENT_MODE =",
-        current_app.config.get(
-            "DEVELOPMENT_MODE"
-        )
-    )
-
     data = request.get_json() or {}
 
     employee_id = (
@@ -641,6 +641,11 @@ def employee_login():
         None
         if isinstance(data, int)
         else data.get("longitude")
+    )
+    accuracy = (
+        None
+        if isinstance(data, int)
+        else data.get("accuracy")
     )
 
     if not employee_id:
@@ -662,69 +667,39 @@ def employee_login():
                 "Access denied. You can only record your own attendance."
         }), 403
 
-    if latitude is None or longitude is None:
+    employee = Employee.query.get(employee_id)
 
+    if not employee:
         return jsonify({
             "success": False,
-            "message":
-                "Current GPS location is required."
-        }), 400
+            "message": "Employee not found."
+        }), 404
 
-    try:
+    location_challenge = None
+    location_challenge_id = get_jwt().get(
+        "location_challenge_id"
+    )
 
-        latitude = float(latitude)
-        longitude = float(longitude)
-
-    except (TypeError, ValueError):
-
-        return jsonify({
-            "success": False,
-            "message":
-                "Invalid GPS coordinates."
-        }), 400
-
-    if not (-90 <= latitude <= 90):
-
-        return jsonify({
-            "success": False,
-            "message":
-                "Invalid latitude."
-        }), 400
-
-    if not (-180 <= longitude <= 180):
-
-        return jsonify({
-            "success": False,
-            "message":
-                "Invalid longitude."
-        }), 400
-
-    if current_app.config.get(
-        "DEVELOPMENT_MODE",
-        False
-    ):
-
-        gps_result = {
-            "allowed": True,
-            "branch_name": "Development Mode",
-            "branch_id": None,
-            "distance": 0,
-            "allowed_radius": 0,
-        }
-
-    else:
-
-        gps_result = verify_employee_location(
-            employee_id=employee_id,
-            latitude=latitude,
-            longitude=longitude
+    if location_challenge_id:
+        location_challenge = (
+            consume_completed_location_challenge(
+                location_challenge_id,
+                employee.employee_id,
+            )
         )
 
-        if not gps_result["allowed"]:
+        if not location_challenge:
+            return jsonify({
+                "success": False,
+                "message": (
+                    "The approved phone location is no longer "
+                    "available. Please sign in again."
+                )
+            }), 403
 
-            return jsonify(
-                gps_result
-            ), 403
+        latitude = location_challenge.latitude
+        longitude = location_challenge.longitude
+        accuracy = location_challenge.accuracy
 
     existing = Attendance.query.filter_by(
         employee_id=employee_id,
@@ -732,6 +707,9 @@ def employee_login():
     ).first()
 
     if existing:
+        if location_challenge:
+            consume_location_challenge(location_challenge)
+            db.session.commit()
 
         return jsonify({
             "success": True,
@@ -740,17 +718,49 @@ def employee_login():
             "already_logged_in": True
         }), 200
 
-    employee = Employee.query.get(
-        employee_id
+    geofence_bypassed = is_employee_geofence_bypassed(employee)
+
+    if not geofence_bypassed and not location_challenge:
+        if latitude is None or longitude is None:
+            return jsonify({
+                "success": False,
+                "message": "Current GPS location is required."
+            }), 400
+
+        try:
+            latitude = float(latitude)
+            longitude = float(longitude)
+            accuracy = float(accuracy)
+        except (TypeError, ValueError):
+            return jsonify({
+                "success": False,
+                "message": "Invalid GPS coordinates."
+            }), 400
+
+        if not (
+            isfinite(latitude)
+            and isfinite(longitude)
+            and isfinite(accuracy)
+            and accuracy >= 0
+            and -90 <= latitude <= 90
+            and -180 <= longitude <= 180
+        ):
+            return jsonify({
+                "success": False,
+                "message": "Invalid location fix or accuracy reading."
+            }), 400
+
+    gps_result = verify_employee_location(
+        employee_id=employee_id,
+        latitude=latitude,
+        longitude=longitude,
+        accuracy=accuracy,
     )
 
-    if not employee:
-
-        return jsonify({
-            "success": False,
-            "message":
-                "Employee not found."
-        }), 404
+    if not gps_result["allowed"]:
+        return jsonify(
+            {"success": False, **gps_result}
+        ), 422 if gps_result.get("retry_required") else 403
 
     status = "Working"
 
@@ -803,6 +813,9 @@ def employee_login():
     )
 
     db.session.add(log)
+
+    if location_challenge:
+        consume_location_challenge(location_challenge)
 
     db.session.commit()
 

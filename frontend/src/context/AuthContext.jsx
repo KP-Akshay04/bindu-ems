@@ -6,7 +6,10 @@ import {
   useCallback,
 } from "react";
 
-import { loginRequest } from "../services/api";
+import {
+  completeLocationChallenge as completeLocationChallengeRequest,
+  loginRequest,
+} from "../services/api";
 import api from "../services/api";
 
 const AuthContext = createContext(null);
@@ -326,21 +329,7 @@ export function AuthProvider({ children }) {
   // LOGIN
   // -------------------------------------------------------
 
-  const login = async ({
-    employee_id,
-    password,
-    role,
-    latitude,
-    longitude,
-  }) => {
-    const data =
-      await loginRequest({
-        employee_id,
-        password,
-        role,
-        latitude,
-        longitude,
-      });
+  const establishSession = useCallback(async (data) => {
 
     const token =
       data.token ||
@@ -388,6 +377,39 @@ export function AuthProvider({ children }) {
     );
 
     return data;
+  }, [persist, refreshPermissions]);
+
+  const login = async ({
+    employee_id,
+    password,
+    role,
+    latitude,
+    longitude,
+    accuracy,
+  }) => {
+    const data =
+      await loginRequest({
+        employee_id,
+        password,
+        role,
+        latitude,
+        longitude,
+        accuracy,
+      });
+
+    return establishSession(data);
+  };
+
+  const completeMobileLocationChallenge = async ({
+    challengeId,
+    token,
+  }) => {
+    const data = await completeLocationChallengeRequest(
+      challengeId,
+      token
+    );
+
+    return establishSession(data);
   };
 
   // -------------------------------------------------------
@@ -535,6 +557,7 @@ export function AuthProvider({ children }) {
         setUser: persist,
 
         login,
+        completeMobileLocationChallenge,
         logout,
 
         refreshUser,

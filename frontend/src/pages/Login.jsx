@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import {
   Shield,
@@ -13,6 +13,17 @@ import {
   AlertCircle,
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
+import MobileLocationChallengeDialog from "../components/MobileLocationChallengeDialog";
+import {
+  attendanceCheckIn,
+  createLocationChallenge,
+  fetchLocationChallengeStatus,
+} from "../services/api";
+import {
+  formatGeofenceError,
+  getCurrentLocation,
+  isGeofenceBypassed,
+} from "../utils/location";
 
 const ROLES = [
   {
@@ -69,7 +80,11 @@ function DropLogo({ size = 56 }) {
 }
 
 export default function Login() {
-  const { login, logout } = useAuth();
+  const {
+    login,
+    logout,
+    completeMobileLocationChallenge,
+  } = useAuth();
 
   const navigate = useNavigate();
   const location = useLocation();
@@ -86,78 +101,61 @@ export default function Login() {
   const [remember, setRemember] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [phoneVerificationAvailable, setPhoneVerificationAvailable] =
+    useState(false);
+  const [mobileChallenge, setMobileChallenge] = useState(null);
+  const [mobileChallengeStatus, setMobileChallengeStatus] =
+    useState("");
+  const [mobileChallengeError, setMobileChallengeError] =
+    useState("");
+  const completingChallengeRef = useRef(false);
 
-  const getCurrentLocation = () => {
-    return new Promise((resolve, reject) => {
-      if (!navigator.geolocation) {
-        reject(
-          new Error(
-            "Geolocation is not supported by this browser."
-          )
-        );
+  const recordAttendance = async (
+    loggedInUser,
+    gpsLocation = null
+  ) => {
+    if (!loggedInUser?.employee_id) {
+      return;
+    }
 
-        return;
-      }
+    try {
+      await attendanceCheckIn({
+        employee_id: loggedInUser.employee_id,
+        latitude: gpsLocation?.latitude,
+        longitude: gpsLocation?.longitude,
+        accuracy: gpsLocation?.accuracy,
+      });
+    } catch (attendanceError) {
+      logout();
+      throw attendanceError;
+    }
+  };
 
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          resolve({
-            latitude:
-              position.coords.latitude,
+  const finishLogin = async (
+    loggedInUser,
+    gpsLocation = null
+  ) => {
+    await recordAttendance(loggedInUser, gpsLocation);
 
-            longitude:
-              position.coords.longitude,
-          });
-        },
-
-        (locationError) => {
-          switch (locationError.code) {
-            case locationError.PERMISSION_DENIED:
-              reject(
-                new Error(
-                  "Location permission is required."
-                )
-              );
-              break;
-
-            case locationError.POSITION_UNAVAILABLE:
-              reject(
-                new Error(
-                  "Unable to determine your location."
-                )
-              );
-              break;
-
-            case locationError.TIMEOUT:
-              reject(
-                new Error(
-                  "Location request timed out."
-                )
-              );
-              break;
-
-            default:
-              reject(
-                new Error(
-                  "Unable to get your location."
-                )
-              );
-          }
-        },
-
-        {
-          enableHighAccuracy: true,
-          timeout: 10000,
-          maximumAge: 0,
-        }
-      );
+    navigate(from, {
+      replace: true,
     });
+  };
+
+  // Keep the polling effect pointed at the latest callbacks without
+  // restarting the polling loop on every render.
+  const challengeActionsRef = useRef(null);
+  challengeActionsRef.current = {
+    completeMobileLocationChallenge,
+    finishLogin,
+    logout,
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     setError("");
+    setPhoneVerificationAvailable(false);
 
     if (
       !employeeId.trim() ||
@@ -179,13 +177,12 @@ export default function Login() {
        * Super Admin, HR and Employee are all employees
        * in the attendance system.
        */
-      const gpsLocation =
-        await getCurrentLocation();
-
-      console.log(
-        "GPS LOCATION:",
-        gpsLocation
+      const geofenceBypassed = isGeofenceBypassed(
+        employeeId.trim()
       );
+      const gpsLocation = geofenceBypassed
+        ? null
+        : await getCurrentLocation();
 
       /*
        * Authenticate the user.
@@ -203,92 +200,144 @@ export default function Login() {
         role,
 
         latitude:
-          gpsLocation.latitude,
+          gpsLocation?.latitude,
 
         longitude:
-          gpsLocation.longitude,
+          gpsLocation?.longitude,
+
+        accuracy:
+          gpsLocation?.accuracy,
       });
 
-      console.log(
-        "LOGIN SUCCESS:",
-        loggedInUser
-      );
-
-      /*
-       * Every authenticated employee must have
-       * attendance recorded for today.
-       *
-       * This includes:
-       * - Super Admin
-       * - HR
-       * - Employee
-       */
-      if (
-        loggedInUser?.employee_id
-      ) {
-        const {
-          attendanceCheckIn,
-        } = await import(
-          "../services/api"
-        );
-
-        console.log(
-          "CALLING ATTENDANCE CHECK-IN"
-        );
-
-        try {
-          const attendanceResult =
-            await attendanceCheckIn({
-              employee_id:
-                loggedInUser.employee_id,
-
-              latitude:
-                gpsLocation.latitude,
-
-              longitude:
-                gpsLocation.longitude,
-            });
-
-          console.log(
-            "ATTENDANCE RESULT:",
-            attendanceResult
-          );
-
-        } catch (attendanceError) {
-          /*
-           * Authentication succeeded but attendance
-           * recording failed.
-           *
-           * Do not allow the user to enter the
-           * dashboard without attendance validation.
-           */
-          logout();
-
-          throw attendanceError;
-        }
-      }
-
-      /*
-       * Authentication + GPS + attendance
-       * were successful.
-       */
-      navigate(from, {
-        replace: true,
-      });
+      await finishLogin(loggedInUser, gpsLocation);
 
     } catch (err) {
-      const msg =
-        err?.response?.data?.message ||
-        err?.response?.data?.error ||
-        err?.message ||
-        "Login failed.";
+      const canVerifyWithPhone =
+        !isGeofenceBypassed(employeeId.trim()) &&
+        (
+          err?.locationFailure === true ||
+          err?.response?.data?.mobile_verification_available === true
+        );
 
-      setError(msg);
+      setPhoneVerificationAvailable(canVerifyWithPhone);
+      setError(formatGeofenceError(err));
 
     } finally {
       setLoading(false);
     }
   };
+
+  const startMobileVerification = async () => {
+    setError("");
+    setMobileChallengeError("");
+    setLoading(true);
+
+    try {
+      const challenge = await createLocationChallenge({
+        employee_id: employeeId.trim(),
+        password,
+        role,
+      });
+
+      completingChallengeRef.current = false;
+      setMobileChallenge(challenge);
+      setMobileChallengeStatus("pending");
+      setPhoneVerificationAvailable(false);
+    } catch (requestError) {
+      setError(formatGeofenceError(requestError));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const cancelMobileVerification = () => {
+    completingChallengeRef.current = false;
+    setMobileChallenge(null);
+    setMobileChallengeStatus("");
+    setMobileChallengeError("");
+  };
+
+  useEffect(() => {
+    if (!mobileChallenge) {
+      return undefined;
+    }
+
+    let active = true;
+    let timerId = null;
+
+    const completeApprovedChallenge = async () => {
+      if (completingChallengeRef.current) {
+        return;
+      }
+
+      completingChallengeRef.current = true;
+      setLoading(true);
+
+      try {
+        const loggedInUser =
+          await challengeActionsRef.current.completeMobileLocationChallenge({
+            challengeId: mobileChallenge.challenge_id,
+            token: mobileChallenge.challenge_token,
+          });
+
+        await challengeActionsRef.current.finishLogin(loggedInUser);
+
+        if (active) {
+          setMobileChallenge(null);
+        }
+      } catch (requestError) {
+        challengeActionsRef.current.logout();
+
+        if (active) {
+          setMobileChallengeError(formatGeofenceError(requestError));
+        }
+      } finally {
+        if (active) {
+          setLoading(false);
+        }
+      }
+    };
+
+    const pollChallenge = async () => {
+      try {
+        const result = await fetchLocationChallengeStatus(
+          mobileChallenge.challenge_id,
+          mobileChallenge.challenge_token
+        );
+
+        if (!active) {
+          return;
+        }
+
+        setMobileChallengeStatus(result.status);
+
+        if (result.status === "approved") {
+          await completeApprovedChallenge();
+          return;
+        }
+      } catch (requestError) {
+        if (active) {
+          setMobileChallengeError(formatGeofenceError(requestError));
+        }
+
+        return;
+      }
+
+      if (active) {
+        timerId = window.setTimeout(pollChallenge, 2000);
+      }
+    };
+
+    pollChallenge();
+
+    return () => {
+      active = false;
+
+      if (timerId) {
+        window.clearTimeout(timerId);
+      }
+    };
+  }, [mobileChallenge]);
 
   return (
     <div className="relative min-h-screen w-full overflow-hidden text-slate-900">
@@ -430,6 +479,17 @@ export default function Login() {
                   </div>
                 )}
 
+                {phoneVerificationAvailable && (
+                  <button
+                    className="mb-4 w-full rounded-xl border border-brand-200 bg-brand-50 px-4 py-3 text-sm font-semibold text-brand-700 transition hover:bg-brand-100"
+                    type="button"
+                    disabled={loading}
+                    onClick={startMobileVerification}
+                  >
+                    Verify this laptop login with my phone
+                  </button>
+                )}
+
                 <div className="mb-5">
                   <label className="label">
                     Employee ID
@@ -547,6 +607,13 @@ export default function Login() {
         </footer>
 
       </div>
+
+      <MobileLocationChallengeDialog
+        challenge={mobileChallenge}
+        status={mobileChallengeStatus}
+        error={mobileChallengeError}
+        onCancel={cancelMobileVerification}
+      />
     </div>
   );
 }

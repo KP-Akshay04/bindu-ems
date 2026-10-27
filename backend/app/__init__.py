@@ -38,6 +38,7 @@ def create_app():
     from app.models.payroll import Payroll
     from app.models.attendance import Attendance
     from app.models.attendance_log import AttendanceLog
+    from app.models.location_challenge import LocationChallenge
     from app.models.shift import Shift
     from app.models.permission import Permission
     from app.models.role_permission import RolePermission

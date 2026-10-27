@@ -18,6 +18,11 @@ import {
 } from "../services/api";
 
 import { extractList } from "../utils/format";
+import {
+  formatGeofenceError,
+  getCurrentLocation,
+  isGeofenceBypassed,
+} from "../utils/location";
 
 const AttendanceContext = createContext(null);
 
@@ -27,86 +32,6 @@ const AttendanceContext = createContext(null);
 
 const todayISO = () =>
   new Date().toISOString().split("T")[0];
-
-// ---------------------------------------------------------
-// GET CURRENT GPS LOCATION
-// ---------------------------------------------------------
-
-const getCurrentLocation = () => {
-  return new Promise((resolve, reject) => {
-    if (!navigator.geolocation) {
-      reject(
-        new Error(
-          "Geolocation is not supported by this browser."
-        )
-      );
-
-      return;
-    }
-
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        const latitude =
-          position.coords.latitude;
-
-        const longitude =
-          position.coords.longitude;
-
-        if (
-          typeof latitude !== "number" ||
-          typeof longitude !== "number"
-        ) {
-          reject(
-            new Error(
-              "Unable to obtain a valid GPS location."
-            )
-          );
-
-          return;
-        }
-
-        resolve({
-          latitude,
-          longitude,
-        });
-      },
-
-      (error) => {
-        let message =
-          "Unable to get your current GPS location.";
-
-        switch (error.code) {
-          case error.PERMISSION_DENIED:
-            message =
-              "Location permission was denied. Please allow location access and try again.";
-            break;
-
-          case error.POSITION_UNAVAILABLE:
-            message =
-              "Your current location is unavailable. Please check your device location settings.";
-            break;
-
-          case error.TIMEOUT:
-            message =
-              "GPS location request timed out. Please try again.";
-            break;
-
-          default:
-            message =
-              "Unable to get your current GPS location.";
-        }
-
-        reject(new Error(message));
-      },
-
-      {
-        enableHighAccuracy: true,
-        timeout: 15000,
-        maximumAge: 0,
-      }
-    );
-  });
-};
 
 // ---------------------------------------------------------
 // ATTENDANCE PROVIDER
@@ -205,18 +130,11 @@ export function AttendanceProvider({
         // Get current browser GPS position
         // -----------------------------------------------
 
-        const {
-          latitude,
-          longitude,
-        } = await getCurrentLocation();
-
-        console.log(
-          "ATTENDANCE GPS:",
-          {
-            latitude,
-            longitude,
-          }
-        );
+        const gpsLocation = isGeofenceBypassed(
+          user?.employee_code
+        )
+          ? null
+          : await getCurrentLocation();
 
         // -----------------------------------------------
         // Send employee ID + GPS to backend
@@ -224,8 +142,9 @@ export function AttendanceProvider({
 
         await attendanceCheckIn({
           employee_id: empId,
-          latitude,
-          longitude,
+          latitude: gpsLocation?.latitude,
+          longitude: gpsLocation?.longitude,
+          accuracy: gpsLocation?.accuracy,
         });
 
         // -----------------------------------------------
@@ -234,17 +153,14 @@ export function AttendanceProvider({
 
         await refresh();
       } catch (err) {
-        const message =
-          err?.response?.data?.message ||
-          err?.message ||
-          "Failed to check in.";
+        const message = formatGeofenceError(err);
 
         setError(message);
 
         throw err;
       }
     },
-    [empId, refresh]
+    [empId, refresh, user?.employee_code]
   );
 
   // -------------------------------------------------------

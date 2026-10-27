@@ -17,32 +17,39 @@ api.interceptors.request.use((config) => {
   return config;
 });
  
-// Centralised error handling
-api.interceptors.response.use(
-  (res) => res,
-  (err) => {
-    console.error(
-      "API ERROR:",
-      err.response?.status,
-      err.config?.method,
-      err.config?.url,
-      err.response?.data
-    );
-
-    if (err.response?.status === 401) {
-      console.error(
-        "401 RECEIVED — TOKEN WAS:",
-        localStorage.getItem("bindu_token")
-      );
-    }
-
-    return Promise.reject(err);
-  }
-);;
-
 // ---- AUTH ----
 export const loginRequest = (payload) =>
   api.post("/api/auth/login", payload).then((r) => r.data);
+
+export const createLocationChallenge = (payload) =>
+  api.post("/api/auth/location-challenges", payload).then((r) => r.data);
+
+export const fetchLocationChallengeStatus = (
+  challengeId,
+  token
+) =>
+  api.get(
+    `/api/auth/location-challenges/${challengeId}/status`,
+    { params: { token } }
+  ).then((r) => r.data);
+
+export const approveLocationChallenge = (
+  challengeId,
+  payload
+) =>
+  api.post(
+    `/api/auth/location-challenges/${challengeId}/approve`,
+    payload
+  ).then((r) => r.data);
+
+export const completeLocationChallenge = (
+  challengeId,
+  token
+) =>
+  api.post(
+    `/api/auth/location-challenges/${challengeId}/complete`,
+    { token }
+  ).then((r) => r.data);
 
 // ---- EMPLOYEES ----
 export const fetchEmployees = () =>
