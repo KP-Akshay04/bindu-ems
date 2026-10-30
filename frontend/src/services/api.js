@@ -1,6 +1,7 @@
 import axios from "axios";
 
-const BASE_URL = "";
+// Temporary HTTP deployment
+const BASE_URL = "http://api.sgsite.in";
 
 const api = axios.create({
   baseURL: BASE_URL,
@@ -16,7 +17,7 @@ api.interceptors.request.use((config) => {
   }
   return config;
 });
- 
+
 // ---- AUTH ----
 export const loginRequest = (payload) =>
   api.post("/api/auth/login", payload).then((r) => r.data);
@@ -24,32 +25,19 @@ export const loginRequest = (payload) =>
 export const createLocationChallenge = (payload) =>
   api.post("/api/auth/location-challenges", payload).then((r) => r.data);
 
-export const fetchLocationChallengeStatus = (
-  challengeId,
-  token
-) =>
-  api.get(
-    `/api/auth/location-challenges/${challengeId}/status`,
-    { params: { token } }
-  ).then((r) => r.data);
+export const fetchLocationChallengeStatus = (challengeId, token) =>
+  api.get(`/api/auth/location-challenges/${challengeId}/status`, {
+    params: { token },
+  }).then((r) => r.data);
 
-export const approveLocationChallenge = (
-  challengeId,
-  payload
-) =>
-  api.post(
-    `/api/auth/location-challenges/${challengeId}/approve`,
-    payload
-  ).then((r) => r.data);
+export const approveLocationChallenge = (challengeId, payload) =>
+  api.post(`/api/auth/location-challenges/${challengeId}/approve`, payload)
+    .then((r) => r.data);
 
-export const completeLocationChallenge = (
-  challengeId,
-  token
-) =>
-  api.post(
-    `/api/auth/location-challenges/${challengeId}/complete`,
-    { token }
-  ).then((r) => r.data);
+export const completeLocationChallenge = (challengeId, token) =>
+  api.post(`/api/auth/location-challenges/${challengeId}/complete`, {
+    token,
+  }).then((r) => r.data);
 
 // ---- EMPLOYEES ----
 export const fetchEmployees = () =>
@@ -63,7 +51,6 @@ export const updateEmployee = (id, payload) =>
 
 export const deactivateEmployee = (id) =>
   api.put(`/api/employees/${id}/deactivate`).then((r) => r.data);
-
 
 // ---- ATTENDANCE ----
 export const fetchAttendance = (params = {}) =>
@@ -84,11 +71,9 @@ export const attendanceLunchIn = (payload) =>
 export const attendanceCheckOut = (employeeId) =>
   api.put(`/api/attendance/logout/${employeeId}`).then((r) => r.data);
 
-// Keep the old name as alias if your Dashboard.jsx still imports it
 export const attendanceLogin = attendanceCheckIn;
 
 // ---- LEAVES ----
-
 export const fetchLeaves = (params = {}) =>
   api.get("/api/leaves", { params }).then((r) => r.data);
 
@@ -130,11 +115,10 @@ export const markPayrollPaid = (id) =>
   api.put(`/api/payroll/${id}/pay`).then((r) => r.data);
 
 // ---- PASSWORD CHANGE ----
-export const changePassword = (id,payload) =>
-  api.put(`/api/employees/${id}/password`,payload).then((r) => r.data);
+export const changePassword = (id, payload) =>
+  api.put(`/api/employees/${id}/password`, payload).then((r) => r.data);
 
-
-// ---- ANNOUNCEMENTS --- 
+// ---- ANNOUNCEMENTS ----
 export const fetchAnnouncements = () =>
   api.get("/api/announcements").then((r) => r.data);
 
@@ -144,23 +128,14 @@ export const createAnnouncement = (payload) =>
 export const deleteAnnouncement = (id) =>
   api.delete(`/api/announcements/${id}`).then((r) => r.data);
 
-
 // ---- ACCESS CONTROL ----
-
 export const fetchAccessControl = () =>
   api.get("/api/access-control").then((r) => r.data);
 
-export const updateAccessControl = (
-  permissionKey,
-  role,
-  enabled
-) =>
-  api.put(
-    `/api/access-control/${permissionKey}`,
-    {
-      role,
-      enabled,
-    }
-  ).then((r) => r.data);
+export const updateAccessControl = (permissionKey, role, enabled) =>
+  api.put(`/api/access-control/${permissionKey}`, {
+    role,
+    enabled,
+  }).then((r) => r.data);
 
 export default api;

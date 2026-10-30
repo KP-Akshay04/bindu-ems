@@ -1,8 +1,32 @@
+# Environment and secrets
 .env
+.env.*
+!.env.example
+
+# Python
 .venv/
 venv/
+venv-*/
 __pycache__/
-*.pyc
+*.py[cod]
+*.egg-info/
+
+# Node
 node_modules/
 dist/
+
+# Uploads
 backend/uploads/
+uploads/
+
+# Backups
+*.bak
+*.zip
+
+# IDE
+.vscode/
+
+# Logs and OS
+*.log
+.DS_Store
+Thumbs.db

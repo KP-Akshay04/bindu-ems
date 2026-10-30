@@ -11,19 +11,20 @@ jwt = JWTManager()
 def create_app():
     app = Flask(__name__)
 
-    # Allow Vite frontend
+    # Allow local development and deployed BINDU EMS frontend
     CORS(
-    app,
-    resources={
-        r"/api/*": {
-            "origins": [
-                "http://localhost:5173",
-                "http://127.0.0.1:5173"
-            ]
-        }
-    },
-    supports_credentials=True
-)
+        app,
+        resources={
+            r"/api/*": {
+                "origins": [
+                    "http://localhost:5173",
+                    "http://127.0.0.1:5173",
+                    "http://app.sgsite.in",
+                ]
+            }
+        },
+        supports_credentials=True,
+    )
 
     app.config.from_object("config.Config")   
 
